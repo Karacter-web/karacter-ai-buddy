@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const PlanInput = z.object({
   utterance: z.string().min(1).max(2000),
+  persona: z.string().max(4000).default(""),
   history: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() }))
     .max(20)
