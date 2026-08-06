@@ -23,12 +23,13 @@ import {
 import type { ChatMessage, Intent } from "@/lib/karacter/types";
 import { cn } from "@/lib/utils";
 
-type IndexSearch = { c?: string };
+type IndexSearch = { c?: string | undefined };
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): IndexSearch => ({
     c: typeof search['c'] === "string" ? (search['c'] as string) : undefined,
   }),
+
   head: () => ({
     meta: [
       { title: "Karacter AI — Voice Assistant with a Capability Registry" },
@@ -156,7 +157,7 @@ function Assistant() {
           pushNotification({
             title: `${intent.capability}.${intent.action}`,
             body: execution.detail,
-            level: execution.status === "error" ? "error" : "success",
+            level: execution.status === "done" ? "success" : "error",
           });
           await supabase.from("intent_logs").insert({
             capability_id: intent.capability,
