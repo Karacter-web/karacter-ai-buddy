@@ -59,7 +59,10 @@ export const planUtterance = createServerFn({ method: "POST" })
         model: "google/gemini-3.6-flash",
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: `${SYSTEM}\n\nCAPABILITY REGISTRY:\n${registry}` },
+          {
+            role: "system",
+            content: `${SYSTEM}\n\nCAPABILITY REGISTRY:\n${registry}${data.persona ? `\n\n${data.persona}` : ""}`,
+          },
           ...data.history,
           { role: "user", content: data.utterance },
         ],
