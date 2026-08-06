@@ -52,5 +52,5 @@ export const exportMyData = createServerFn({ method: "POST" })
       const { data } = await context.supabase.from(table).select("*");
       bundle[table] = data ?? [];
     }
-    return bundle;
+    return { json: JSON.stringify(bundle, null, 2) };
   });
