@@ -73,12 +73,20 @@ function Assistant() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [voiceOut, setVoiceOut] = useState(true);
+  const [locked, setLocked] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const plan = useServerFn(planUtterance);
+  const learn = useServerFn(learnFromConversation);
   const { data: capabilities = [] } = useCapabilities();
   const { data: integrations = [] } = useIntegrations();
   const { data: stored } = useConversationMessages(conversationParam);
+  const { data: profile = null } = useProfile();
+  const { data: biometrics = [] } = useBiometrics();
+  const { data: memories = [] } = useMemories();
+  const { data: consents = [] } = useConsents();
+  const learningOn = consents.some((c) => c.consent_key === "adaptive_learning" && c.granted);
 
   useEffect(() => {
     setConversationId(conversationParam);
