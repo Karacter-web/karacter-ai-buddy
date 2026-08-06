@@ -104,7 +104,7 @@ function Assistant() {
           await supabase.from("intent_logs").insert({
             capability_id: intent.capability,
             action: intent.action,
-            args: intent.args ?? {},
+            args: (intent.args ?? {}) as never,
             status: execution.status,
             result: execution.detail,
           });

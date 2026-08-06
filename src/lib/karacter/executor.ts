@@ -37,7 +37,7 @@ async function openCamera(): Promise<ExecutionResult> {
 
 export async function executeIntent(
   intent: Intent,
-  ctx: { capability?: Capability; integration?: Integration },
+  ctx: { capability?: Capability | undefined; integration?: Integration | undefined },
 ): Promise<ExecutionResult> {
   const { capability, integration } = ctx;
 
