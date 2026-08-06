@@ -68,7 +68,7 @@ export async function executeIntent(
         }
         if (intent.action === "share") {
           if (!navigator.share) return { status: "unsupported", detail: "Sharing is not supported here." };
-          await navigator.share({ text: str("text"), url: str("url") || undefined });
+          await navigator.share({ text: str("text"), ...(str("url") ? { url: str("url") } : {}) });
           return { status: "done", detail: "Share sheet opened." };
         }
         if (intent.action === "vibrate") {
