@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Send, ShieldAlert, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/karacter/AppShell";
@@ -11,10 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { planUtterance } from "@/lib/karacter/plan.functions";
+import { learnFromConversation } from "@/lib/karacter/learn.functions";
 import { executeIntent } from "@/lib/karacter/executor";
 import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
 import { speak, useVoice } from "@/lib/karacter/useVoice";
 import { pushNotification } from "@/lib/karacter/notifications";
+import { useBiometrics, useConsents, useMemories, useProfile, personaSummary } from "@/lib/karacter/profile";
+import { enforceLockdown, verifyIdentity } from "@/lib/karacter/security";
+import { useWakeWord } from "@/lib/karacter/wakeword";
 import {
   createConversation,
   saveMessage,
