@@ -1,24 +1,224 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { toast } from "sonner";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { AppShell } from "@/components/karacter/AppShell";
+import { AuthGate } from "@/components/karacter/AuthGate";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { planUtterance } from "@/lib/karacter/plan.functions";
+import { executeIntent } from "@/lib/karacter/executor";
+import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
+import { speak, useVoice } from "@/lib/karacter/useVoice";
+import type { ChatMessage, Intent } from "@/lib/karacter/types";
+import { cn } from "@/lib/utils";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Karacter AI — Voice Assistant with a Capability Registry" },
+      {
+        name: "description",
+        content:
+          "Karacter AI is a voice-first assistant that plans intents against a live capability registry and executes them through connected integrations.",
+      },
+      { property: "og:title", content: "Karacter AI — Voice Assistant with a Capability Registry" },
+      {
+        property: "og:description",
+        content:
+          "Speak or type an instruction. Karacter emits intents like open_app(camera) and your connected capabilities execute them.",
+      },
+    ],
+  }),
+  component: () => (
+    <AuthGate>
+      <AppShell>
+        <Assistant />
+      </AppShell>
+    </AuthGate>
+  ),
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+type Line = ChatMessage & { results?: string[] };
+
+function Assistant() {
+  const [messages, setMessages] = useState<Line[]>([]);
+  const [input, setInput] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [voiceOut, setVoiceOut] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const plan = useServerFn(planUtterance);
+  const { data: capabilities = [] } = useCapabilities();
+  const { data: integrations = [] } = useIntegrations();
+
+  const available = useMemo(
+    () =>
+      capabilities.filter((c) =>
+        integrations.some((i) => i.capability_id === c.id && i.enabled),
+      ),
+    [capabilities, integrations],
+  );
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, thinking]);
+
+  const submit = useCallback(
+    async (utterance: string) => {
+      const text = utterance.trim();
+      if (!text || thinking) return;
+      setInput("");
+      const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "user", content: text, intents: [], createdAt: new Date().toISOString() },
+      ]);
+      setThinking(true);
+
+      try {
+        const result = await plan({
+          data: {
+            utterance: text,
+            history,
+            capabilities: available.map((c) => ({
+              id: c.id,
+              name: c.name,
+              description: c.description,
+              actions: (c.actions ?? []).map((a) => ({ name: a.name, description: a.description })),
+            })),
+          },
+        });
+
+        const intents = (result.intents ?? []) as Intent[];
+        const results: string[] = [];
+
+        for (const intent of intents) {
+          const capability = capabilities.find((c) => c.id === intent.capability);
+          const integration = integrations.find((i) => i.capability_id === intent.capability);
+          const execution = await executeIntent(intent, { capability, integration });
+          results.push(`${intent.capability}.${intent.action} → ${execution.detail}`);
+          await supabase.from("intent_logs").insert({
+            capability_id: intent.capability,
+            action: intent.action,
+            args: (intent.args ?? {}) as never,
+            status: execution.status,
+            result: execution.detail,
+          });
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: result.speech,
+            intents,
+            results,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+        speak(result.speech, voiceOut);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Karacter could not respond");
+      } finally {
+        setThinking(false);
+      }
+    },
+    [available, capabilities, integrations, messages, plan, thinking, voiceOut],
+  );
+
+  const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="flex flex-col gap-6">
+      <section className="flex flex-col items-center gap-4 pt-4 text-center">
+        <button
+          onClick={() => (listening ? stop() : start())}
+          aria-label={listening ? "Stop listening" : "Start listening"}
+          className={cn(
+            "relative grid size-28 place-items-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/40 transition-all",
+            listening && "scale-105 bg-primary/20 ring-2 ring-primary",
+          )}
+        >
+          {listening && <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />}
+          {supported ? <Mic className="size-9" /> : <MicOff className="size-9" />}
+        </button>
+        <div>
+          <p className="text-sm font-medium">
+            {listening ? "Listening…" : thinking ? "Thinking…" : "Tap to speak"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {available.length} capability{available.length === 1 ? "" : "ies"} connected
+            {supported ? "" : " · voice input unsupported in this browser"}
+          </p>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        {messages.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            <Sparkles className="mx-auto mb-2 size-5 text-primary" />
+            Try “open camera”, “search for flight prices to Lagos”, or “what capabilities do you have?”
+          </div>
+        )}
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={cn(
+              "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
+              message.role === "user"
+                ? "self-end bg-primary text-primary-foreground"
+                : "self-start border border-border bg-card",
+            )}
+          >
+            <p>{message.content}</p>
+            {message.intents?.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {message.intents.map((intent, index) => (
+                  <li key={index} className="rounded-lg bg-secondary/60 px-2 py-1 font-mono text-[11px]">
+                    {intent.capability}.{intent.action}(
+                    {Object.entries(intent.args ?? {})
+                      .map(([k, v]) => `${k}: ${String(v)}`)
+                      .join(", ")}
+                    )
+                    {message.results?.[index] && (
+                      <span className="block text-muted-foreground">{message.results[index]}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </section>
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit(input);
+        }}
+        className="fixed inset-x-0 bottom-0 border-t border-border bg-background/90 p-3 backdrop-blur"
+      >
+        <div className="mx-auto flex max-w-4xl items-center gap-2">
+          <Input
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Type an instruction…"
+            aria-label="Instruction"
+          />
+          <Button type="button" variant="ghost" size="icon" onClick={() => setVoiceOut(!voiceOut)}>
+            {voiceOut ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+          </Button>
+          <Button type="submit" size="icon" disabled={thinking}>
+            <Send className="size-4" />
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

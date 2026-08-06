@@ -14,7 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      capabilities: {
+        Row: {
+          actions: Json
+          auth_type: string
+          category: string
+          config_schema: Json
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          runtime: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          auth_type?: string
+          category?: string
+          config_schema?: Json
+          created_at?: string
+          description?: string
+          icon?: string
+          id: string
+          name: string
+          runtime?: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          auth_type?: string
+          category?: string
+          config_schema?: Json
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          runtime?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          capability_id: string
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capability_id: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          capability_id?: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_capability_id_fkey"
+            columns: ["capability_id"]
+            isOneToOne: false
+            referencedRelation: "capabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intent_logs: {
+        Row: {
+          action: string
+          args: Json
+          capability_id: string | null
+          created_at: string
+          id: string
+          result: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          args?: Json
+          capability_id?: string | null
+          created_at?: string
+          id?: string
+          result?: string
+          status?: string
+          user_id?: string
+        }
+        Update: {
+          action?: string
+          args?: Json
+          capability_id?: string | null
+          created_at?: string
+          id?: string
+          result?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          intents: Json
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          intents?: Json
+          role: string
+          user_id?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          intents?: Json
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
