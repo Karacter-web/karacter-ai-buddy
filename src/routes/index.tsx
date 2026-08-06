@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Send, ShieldAlert, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/karacter/AppShell";
@@ -11,10 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { planUtterance } from "@/lib/karacter/plan.functions";
+import { learnFromConversation } from "@/lib/karacter/learn.functions";
 import { executeIntent } from "@/lib/karacter/executor";
 import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
 import { speak, useVoice } from "@/lib/karacter/useVoice";
 import { pushNotification } from "@/lib/karacter/notifications";
+import { useBiometrics, useConsents, useMemories, useProfile, personaSummary } from "@/lib/karacter/profile";
+import { enforceLockdown, verifyIdentity } from "@/lib/karacter/security";
+import { useWakeWord } from "@/lib/karacter/wakeword";
 import {
   createConversation,
   saveMessage,
@@ -69,12 +73,20 @@ function Assistant() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [voiceOut, setVoiceOut] = useState(true);
+  const [locked, setLocked] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const plan = useServerFn(planUtterance);
+  const learn = useServerFn(learnFromConversation);
   const { data: capabilities = [] } = useCapabilities();
   const { data: integrations = [] } = useIntegrations();
   const { data: stored } = useConversationMessages(conversationParam);
+  const { data: profile = null } = useProfile();
+  const { data: biometrics = [] } = useBiometrics();
+  const { data: memories = [] } = useMemories();
+  const { data: consents = [] } = useConsents();
+  const learningOn = consents.some((c) => c.consent_key === "adaptive_learning" && c.granted);
 
   useEffect(() => {
     setConversationId(conversationParam);
@@ -136,6 +148,7 @@ function Assistant() {
         const result = await plan({
           data: {
             utterance: text,
+            persona: personaSummary(profile, memories),
             history,
             capabilities: available.map((c) => ({
               id: c.id,
@@ -187,6 +200,23 @@ function Assistant() {
         });
         void queryClient.invalidateQueries({ queryKey: ["conversations"] });
         speak(result.speech, voiceOut);
+
+        if (learningOn) {
+          void learn({
+            data: {
+              transcript: [
+                ...history,
+                { role: "user" as const, content: text },
+                { role: "assistant" as const, content: result.speech },
+              ].slice(-10),
+              known: memories.slice(0, 40).map((m) => m.content),
+            },
+          })
+            .then((r) => {
+              if (r.saved > 0) void queryClient.invalidateQueries({ queryKey: ["memories"] });
+            })
+            .catch(() => undefined);
+        }
       } catch (error) {
         const detail = error instanceof Error ? error.message : "Karacter could not respond";
         toast.error(detail);
@@ -200,16 +230,73 @@ function Assistant() {
       capabilities,
       conversationId,
       integrations,
+      learn,
+      learningOn,
+      memories,
       messages,
       navigate,
       plan,
+      profile,
       queryClient,
       thinking,
       voiceOut,
     ],
   );
 
-  const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
+  const guardedSubmit = useCallback(
+    async (utterance: string) => {
+      if (locked) return;
+      const needsCheck = Boolean(profile?.require_voice_match || profile?.require_face_match);
+      if (needsCheck) {
+        setVerifying(true);
+        const verdict = await verifyIdentity(profile, biometrics);
+        setVerifying(false);
+        if (!verdict.ok) {
+          toast.error(`Identity check failed — ${verdict.reason}`);
+          pushNotification({
+            title: "Identity check failed",
+            body: verdict.reason,
+            level: "error",
+          });
+          if (profile?.lock_on_mismatch) {
+            await enforceLockdown(verdict.reason);
+            setLocked(verdict.reason);
+          }
+          return;
+        }
+      }
+      await submit(utterance);
+    },
+    [biometrics, locked, profile, submit],
+  );
+
+  const { listening, supported, start, stop } = useVoice(
+    (transcript) => void guardedSubmit(transcript),
+  );
+
+  useWakeWord({
+    enabled: Boolean(profile?.wake_word_enabled) && !locked,
+    wakeWord: profile?.wake_word ?? "hey karacter",
+    paused: listening || thinking || verifying,
+    onWake: (remainder) => {
+      if (remainder) void guardedSubmit(remainder);
+      else start();
+    },
+  });
+
+  if (locked) {
+    return (
+      <div className="grid min-h-[60vh] place-items-center text-center">
+        <div className="max-w-sm space-y-3">
+          <ShieldAlert className="mx-auto size-10 text-destructive" />
+          <h1 className="text-lg font-semibold">Karacter is locked</h1>
+          <p className="text-sm text-muted-foreground">{locked}</p>
+          <Button onClick={() => void supabase.auth.signOut()}>Sign in again</Button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -227,7 +314,7 @@ function Assistant() {
         </button>
         <div>
           <p className="text-sm font-medium">
-            {listening ? "Listening…" : thinking ? "Thinking…" : "Tap to speak"}
+            {locked ? "Locked" : verifying ? "Verifying you…" : listening ? "Listening…" : thinking ? "Thinking…" : profile?.wake_word_enabled ? `Say “${profile.wake_word}” or tap to speak` : "Tap to speak"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {available.length} capabilit{available.length === 1 ? "y" : "ies"} connected
@@ -279,7 +366,7 @@ function Assistant() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void submit(input);
+          void guardedSubmit(input);
         }}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 p-3 backdrop-blur"
       >

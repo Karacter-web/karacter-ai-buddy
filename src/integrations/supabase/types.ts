@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      assistant_memories: {
+        Row: {
+          category: string
+          confidence: number
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          confidence?: number
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      biometric_enrollments: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          samples: number
+          signature: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string
+          samples?: number
+          signature?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          samples?: number
+          signature?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       capabilities: {
         Row: {
           actions: Json
@@ -53,6 +116,36 @@ export type Database = {
           name?: string
           runtime?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      consent_records: {
+        Row: {
+          consent_key: string
+          created_at: string
+          granted: boolean
+          id: string
+          updated_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          consent_key: string
+          created_at?: string
+          granted?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+          version?: string
+        }
+        Update: {
+          consent_key?: string
+          created_at?: string
+          granted?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+          version?: string
         }
         Relationships: []
       }
@@ -191,6 +284,120 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      permission_grants: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          avatar_url: string
+          created_at: string
+          display_name: string
+          gender: string
+          id: string
+          locale: string
+          lock_on_mismatch: boolean
+          nickname: string
+          onboarding_completed: boolean
+          require_face_match: boolean
+          require_voice_match: boolean
+          updated_at: string
+          user_id: string
+          wake_word: string
+          wake_word_enabled: boolean
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string
+          created_at?: string
+          display_name?: string
+          gender?: string
+          id?: string
+          locale?: string
+          lock_on_mismatch?: boolean
+          nickname?: string
+          onboarding_completed?: boolean
+          require_face_match?: boolean
+          require_voice_match?: boolean
+          updated_at?: string
+          user_id?: string
+          wake_word?: string
+          wake_word_enabled?: boolean
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string
+          created_at?: string
+          display_name?: string
+          gender?: string
+          id?: string
+          locale?: string
+          lock_on_mismatch?: boolean
+          nickname?: string
+          onboarding_completed?: boolean
+          require_face_match?: boolean
+          require_voice_match?: boolean
+          updated_at?: string
+          user_id?: string
+          wake_word?: string
+          wake_word_enabled?: boolean
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          source: string
+          updated_at: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: []
       }
     }
     Views: {

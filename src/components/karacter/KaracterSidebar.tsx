@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, Plug, ScrollText, LogOut, History, SquarePen } from "lucide-react";
+import { Mic, Plug, ScrollText, LogOut, History, SquarePen, Settings, UserRoundCog } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,8 @@ const NAV = [
   { to: "/history", label: "History", icon: History },
   { to: "/integrations", label: "Integrations", icon: Plug },
   { to: "/activity", label: "Activity", icon: ScrollText },
+  { to: "/onboarding", label: "Train Karacter", icon: UserRoundCog },
+  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function KaracterSidebar() {
