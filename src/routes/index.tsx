@@ -148,6 +148,7 @@ function Assistant() {
         const result = await plan({
           data: {
             utterance: text,
+            persona: personaSummary(profile, memories),
             history,
             capabilities: available.map((c) => ({
               id: c.id,
