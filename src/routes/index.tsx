@@ -200,6 +200,23 @@ function Assistant() {
         });
         void queryClient.invalidateQueries({ queryKey: ["conversations"] });
         speak(result.speech, voiceOut);
+
+        if (learningOn) {
+          void learn({
+            data: {
+              transcript: [
+                ...history,
+                { role: "user" as const, content: text },
+                { role: "assistant" as const, content: result.speech },
+              ].slice(-10),
+              known: memories.slice(0, 40).map((m) => m.content),
+            },
+          })
+            .then((r) => {
+              if (r.saved > 0) void queryClient.invalidateQueries({ queryKey: ["memories"] });
+            })
+            .catch(() => undefined);
+        }
       } catch (error) {
         const detail = error instanceof Error ? error.message : "Karacter could not respond";
         toast.error(detail);
@@ -213,16 +230,73 @@ function Assistant() {
       capabilities,
       conversationId,
       integrations,
+      learn,
+      learningOn,
+      memories,
       messages,
       navigate,
       plan,
+      profile,
       queryClient,
       thinking,
       voiceOut,
     ],
   );
 
-  const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
+  const guardedSubmit = useCallback(
+    async (utterance: string) => {
+      if (locked) return;
+      const needsCheck = Boolean(profile?.require_voice_match || profile?.require_face_match);
+      if (needsCheck) {
+        setVerifying(true);
+        const verdict = await verifyIdentity(profile, biometrics);
+        setVerifying(false);
+        if (!verdict.ok) {
+          toast.error(`Identity check failed — ${verdict.reason}`);
+          pushNotification({
+            title: "Identity check failed",
+            body: verdict.reason,
+            level: "error",
+          });
+          if (profile?.lock_on_mismatch) {
+            await enforceLockdown(verdict.reason);
+            setLocked(verdict.reason);
+          }
+          return;
+        }
+      }
+      await submit(utterance);
+    },
+    [biometrics, locked, profile, submit],
+  );
+
+  const { listening, supported, start, stop } = useVoice(
+    (transcript) => void guardedSubmit(transcript),
+  );
+
+  useWakeWord({
+    enabled: Boolean(profile?.wake_word_enabled) && !locked,
+    wakeWord: profile?.wake_word ?? "hey karacter",
+    paused: listening || thinking || verifying,
+    onWake: (remainder) => {
+      if (remainder) void guardedSubmit(remainder);
+      else start();
+    },
+  });
+
+  if (locked) {
+    return (
+      <div className="grid min-h-[60vh] place-items-center text-center">
+        <div className="max-w-sm space-y-3">
+          <ShieldAlert className="mx-auto size-10 text-destructive" />
+          <h1 className="text-lg font-semibold">Karacter is locked</h1>
+          <p className="text-sm text-muted-foreground">{locked}</p>
+          <Button onClick={() => void supabase.auth.signOut()}>Sign in again</Button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col gap-6">
