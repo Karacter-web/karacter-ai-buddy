@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,10 +14,21 @@ import { planUtterance } from "@/lib/karacter/plan.functions";
 import { executeIntent } from "@/lib/karacter/executor";
 import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
 import { speak, useVoice } from "@/lib/karacter/useVoice";
+import { pushNotification } from "@/lib/karacter/notifications";
+import {
+  createConversation,
+  saveMessage,
+  useConversationMessages,
+} from "@/lib/karacter/chat";
 import type { ChatMessage, Intent } from "@/lib/karacter/types";
 import { cn } from "@/lib/utils";
 
+type IndexSearch = { c?: string };
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): IndexSearch => ({
+    c: typeof search['c'] === "string" ? (search['c'] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Karacter AI — Voice Assistant with a Capability Registry" },
@@ -31,6 +43,8 @@ export const Route = createFileRoute("/")({
         content:
           "Speak or type an instruction. Karacter emits intents like open_app(camera) and your connected capabilities execute them.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => (
@@ -45,6 +59,11 @@ export const Route = createFileRoute("/")({
 type Line = ChatMessage & { results?: string[] };
 
 function Assistant() {
+  const { c: conversationParam } = Route.useSearch();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [conversationId, setConversationId] = useState<string | undefined>(conversationParam);
   const [messages, setMessages] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -54,6 +73,25 @@ function Assistant() {
   const plan = useServerFn(planUtterance);
   const { data: capabilities = [] } = useCapabilities();
   const { data: integrations = [] } = useIntegrations();
+  const { data: stored } = useConversationMessages(conversationParam);
+
+  useEffect(() => {
+    setConversationId(conversationParam);
+    if (!conversationParam) setMessages([]);
+  }, [conversationParam]);
+
+  useEffect(() => {
+    if (!conversationParam || !stored) return;
+    setMessages(
+      stored.map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        intents: (message.intents ?? []) as Intent[],
+        createdAt: message.created_at,
+      })),
+    );
+  }, [conversationParam, stored]);
 
   const available = useMemo(
     () =>
@@ -69,17 +107,31 @@ function Assistant() {
 
   const submit = useCallback(
     async (utterance: string) => {
-      const text = utterance.trim();
+      const text = utterance.trim().slice(0, 2000);
       if (!text || thinking) return;
       setInput("");
       const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
       setMessages((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), role: "user", content: text, intents: [], createdAt: new Date().toISOString() },
+        {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: text,
+          intents: [],
+          createdAt: new Date().toISOString(),
+        },
       ]);
       setThinking(true);
 
       try {
+        let activeId = conversationId;
+        if (!activeId) {
+          activeId = await createConversation(text);
+          setConversationId(activeId);
+          void navigate({ to: "/", search: { c: activeId }, replace: true });
+        }
+        await saveMessage({ conversationId: activeId, role: "user", content: text });
+
         const result = await plan({
           data: {
             utterance: text,
@@ -101,6 +153,11 @@ function Assistant() {
           const integration = integrations.find((i) => i.capability_id === intent.capability);
           const execution = await executeIntent(intent, { capability, integration });
           results.push(`${intent.capability}.${intent.action} → ${execution.detail}`);
+          pushNotification({
+            title: `${intent.capability}.${intent.action}`,
+            body: execution.detail,
+            level: execution.status === "error" ? "error" : "success",
+          });
           await supabase.from("intent_logs").insert({
             capability_id: intent.capability,
             action: intent.action,
@@ -121,14 +178,34 @@ function Assistant() {
             createdAt: new Date().toISOString(),
           },
         ]);
+        await saveMessage({
+          conversationId: activeId,
+          role: "assistant",
+          content: result.speech,
+          intents,
+        });
+        void queryClient.invalidateQueries({ queryKey: ["conversations"] });
         speak(result.speech, voiceOut);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Karacter could not respond");
+        const detail = error instanceof Error ? error.message : "Karacter could not respond";
+        toast.error(detail);
+        pushNotification({ title: "Karacter error", body: detail, level: "error" });
       } finally {
         setThinking(false);
       }
     },
-    [available, capabilities, integrations, messages, plan, thinking, voiceOut],
+    [
+      available,
+      capabilities,
+      conversationId,
+      integrations,
+      messages,
+      navigate,
+      plan,
+      queryClient,
+      thinking,
+      voiceOut,
+    ],
   );
 
   const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
@@ -152,7 +229,7 @@ function Assistant() {
             {listening ? "Listening…" : thinking ? "Thinking…" : "Tap to speak"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {available.length} capability{available.length === 1 ? "" : "ies"} connected
+            {available.length} capabilit{available.length === 1 ? "y" : "ies"} connected
             {supported ? "" : " · voice input unsupported in this browser"}
           </p>
         </div>
@@ -162,7 +239,8 @@ function Assistant() {
         {messages.length === 0 && (
           <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             <Sparkles className="mx-auto mb-2 size-5 text-primary" />
-            Try “open camera”, “search for flight prices to Lagos”, or “what capabilities do you have?”
+            Try “open camera”, “search for flight prices to Lagos”, or “what capabilities do you
+            have?”
           </div>
         )}
         {messages.map((message) => (
@@ -202,7 +280,7 @@ function Assistant() {
           event.preventDefault();
           void submit(input);
         }}
-        className="fixed inset-x-0 bottom-0 border-t border-border bg-background/90 p-3 backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 p-3 backdrop-blur"
       >
         <div className="mx-auto flex max-w-4xl items-center gap-2">
           <Input
@@ -210,6 +288,7 @@ function Assistant() {
             onChange={(event) => setInput(event.target.value)}
             placeholder="Type an instruction…"
             aria-label="Instruction"
+            maxLength={2000}
           />
           <Button type="button" variant="ghost" size="icon" onClick={() => setVoiceOut(!voiceOut)}>
             {voiceOut ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
