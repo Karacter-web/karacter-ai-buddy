@@ -62,7 +62,10 @@ function Integrations() {
     const { error } = await supabase
       .from("integrations")
       .insert({ capability_id: capability.id, status: "connected", enabled: true });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(`${capability.name} connected`);
     refresh();
     if ((capability.config_schema ?? []).length > 0) openConfig(capability);
@@ -70,13 +73,19 @@ function Integrations() {
 
   async function toggle(integration: Integration, enabled: boolean) {
     const { error } = await supabase.from("integrations").update({ enabled }).eq("id", integration.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     refresh();
   }
 
   async function revoke(integration: Integration) {
     const { error } = await supabase.from("integrations").delete().eq("id", integration.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Integration revoked");
     refresh();
   }
@@ -102,7 +111,10 @@ function Integrations() {
       .from("integrations")
       .update({ config: draft, status: "connected" })
       .eq("id", integration.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Settings saved");
     setConfiguring(null);
     refresh();
