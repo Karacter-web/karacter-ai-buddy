@@ -314,7 +314,7 @@ function Assistant() {
         </button>
         <div>
           <p className="text-sm font-medium">
-            {listening ? "Listening…" : thinking ? "Thinking…" : "Tap to speak"}
+            {locked ? "Locked" : verifying ? "Verifying you…" : listening ? "Listening…" : thinking ? "Thinking…" : profile?.wake_word_enabled ? `Say “${profile.wake_word}” or tap to speak` : "Tap to speak"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {available.length} capabilit{available.length === 1 ? "y" : "ies"} connected
@@ -366,7 +366,7 @@ function Assistant() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void submit(input);
+          void guardedSubmit(input);
         }}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 p-3 backdrop-blur"
       >
