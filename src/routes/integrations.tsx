@@ -135,25 +135,58 @@ function Integrations() {
       <div className="grid gap-3 sm:grid-cols-2">
         {capabilities.map((capability) => {
           const integration = find(capability.id);
+          const branded = hasBrand(capability.id);
           return (
-            <div key={capability.id} className="rounded-2xl border border-border bg-card p-4">
+            <div
+              key={capability.id}
+              className="group rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+            >
               <div className="flex items-start gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-                  <Plug className="size-4" />
+                <span
+                  className={cn(
+                    "grid size-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset",
+                    branded ? "bg-white ring-black/10" : "bg-secondary ring-border",
+                  )}
+                >
+                  <BrandIcon capabilityId={capability.id} className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h2 className="truncate text-sm font-semibold">{capability.name}</h2>
                     <Badge variant="secondary" className="text-[10px]">
                       {capability.auth_type.replace("_", " ")}
                     </Badge>
+                    {integration && (
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 text-[10px] font-medium",
+                          integration.enabled ? "text-primary" : "text-muted-foreground",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            integration.enabled ? "bg-primary" : "bg-muted-foreground/50",
+                          )}
+                        />
+                        {integration.enabled ? "Live" : "Paused"}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{capability.description}</p>
-                  <p className="mt-2 font-mono text-[10px] text-muted-foreground">
-                    {(capability.actions ?? []).map((a) => a.name).join(" · ")}
-                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {(capability.actions ?? []).map((a) => (
+                      <span
+                        key={a.name}
+                        className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                      >
+                        {a.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
+
 
               <div className="mt-4 flex items-center gap-2">
                 {integration ? (
