@@ -1,4 +1,6 @@
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
 import {
   captureFaceSignatureFromCamera,
   captureVoiceSignature,
@@ -16,19 +18,29 @@ export type VerificationResult = {
 };
 
 /**
- * Gate assistant activation behind the enrolled identity.
- * Returns ok:true when no identity checks are enabled.
+ * Gate assistant activation behind the authenticated account first, then the
+ * enrolled identity. Biometrics are a second factor layered on top of the
+ * Supabase session — never a replacement for it.
  */
 export async function verifyIdentity(
   profile: Profile | null,
   enrollments: BiometricEnrollment[],
 ): Promise<VerificationResult> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    return { ok: false, reason: "Your session expired — sign in again to use Karacter" };
+  }
+  if (profile && profile.user_id !== data.user.id) {
+    return { ok: false, reason: "Enrolled identity does not belong to this account" };
+  }
+
   if (!profile) return { ok: true, reason: "no profile checks" };
   const needsVoice = profile.require_voice_match;
   const needsFace = profile.require_face_match;
   if (!needsVoice && !needsFace) return { ok: true, reason: "identity checks off" };
 
   const result: VerificationResult = { ok: true, reason: "verified" };
+
 
   if (needsVoice) {
     const enrolled = enrollments.find((e) => e.kind === "voice");
@@ -85,4 +97,17 @@ export async function enforceLockdown(reason: string) {
   }
   toast.error(`Karacter locked: ${reason}`);
   window.dispatchEvent(new CustomEvent("karacter:lock", { detail: { reason } }));
+}
+
+/**
+ * Account-password fallback for when biometrics are unavailable
+ * (no microphone, bad lighting) but the user must still prove identity.
+ */
+export async function verifyWithAccountPassword(password: string): Promise<VerificationResult> {
+  const { data } = await supabase.auth.getUser();
+  const email = data.user?.email;
+  if (!email) return { ok: false, reason: "No signed-in account" };
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { ok: false, reason: "Password did not match" };
+  return { ok: true, reason: "verified by account password" };
 }

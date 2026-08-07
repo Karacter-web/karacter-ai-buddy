@@ -48,6 +48,52 @@ const STRENGTH = [
 
 type Mode = "signin" | "signup" | "forgot";
 
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
+      <path
+        fill="#4285F4"
+        d="M23.06 12.25c0-.85-.08-1.67-.22-2.45H12v4.64h6.2a5.3 5.3 0 0 1-2.3 3.48v2.89h3.72c2.18-2 3.44-4.96 3.44-8.56Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23.5c3.11 0 5.72-1.03 7.62-2.79l-3.72-2.89c-1.03.69-2.35 1.1-3.9 1.1-3 0-5.54-2.02-6.45-4.75H1.7v2.98A11.5 11.5 0 0 0 12 23.5Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.55 14.17a6.9 6.9 0 0 1 0-4.34V6.85H1.7a11.5 11.5 0 0 0 0 10.3l3.85-2.98Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.08c1.69 0 3.21.58 4.4 1.72l3.3-3.3C17.71 1.62 15.1.5 12 .5A11.5 11.5 0 0 0 1.7 6.85l3.85 2.98C6.46 7.1 9 5.08 12 5.08Z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Google sign-in is brokered by Supabase Auth (credentials configured in the
+ * Supabase dashboard). Inside an iframe preview Google refuses to render its
+ * consent screen, so we hand the URL to a top-level tab instead.
+ */
+async function signInWithGoogle() {
+  const inFrame = typeof window !== "undefined" && window.self !== window.top;
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+      skipBrowserRedirect: inFrame,
+      queryParams: { prompt: "select_account" },
+    },
+  });
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+  if (inFrame && data?.url) window.open(data.url, "_blank", "noopener,noreferrer");
+}
+
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSession();
   const [mode, setMode] = useState<Mode>("signin");
@@ -250,6 +296,30 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   ? "Create account"
                   : "Send reset link"}
           </Button>
+
+          {mode !== "forgot" && (
+            <>
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={busy}
+                onClick={signInWithGoogle}
+              >
+                <GoogleMark />
+                Continue with Google
+              </Button>
+            </>
+          )}
+
 
           <button
             type="button"

@@ -1,6 +1,8 @@
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { KaracterSidebar } from "@/components/karacter/KaracterSidebar";
 import { NotificationBell } from "@/components/karacter/NotificationBell";
+import { InstallPrompt } from "@/components/karacter/InstallPrompt";
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -13,9 +15,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="min-w-0 truncate text-sm font-semibold uppercase tracking-[0.2em]">
               Karacter
             </span>
-            <div className="ml-auto shrink-0">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <InstallPrompt />
               <NotificationBell />
             </div>
+
           </header>
           <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-28 pt-6">{children}</main>
         </SidebarInset>
