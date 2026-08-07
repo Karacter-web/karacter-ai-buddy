@@ -2,7 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plug, Check, Settings2, Trash2 } from "lucide-react";
+import { Check, Settings2, Trash2 } from "lucide-react";
+
+import { BrandIcon, hasBrand } from "@/components/karacter/BrandIcon";
+import { cn } from "@/lib/utils";
+
 
 import { AppShell } from "@/components/karacter/AppShell";
 import { AuthGate } from "@/components/karacter/AuthGate";
