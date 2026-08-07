@@ -65,3 +65,7 @@ export function BrandIcon({
   const Fallback = FALLBACKS[capabilityId] ?? Plug;
   return <Fallback className={cn("size-5 text-primary", className)} aria-hidden />;
 }
+
+export function hasBrand(capabilityId: string) {
+  return Boolean(BRANDS[capabilityId]);
+}
