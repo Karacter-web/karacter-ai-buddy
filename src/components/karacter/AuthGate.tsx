@@ -251,6 +251,30 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   : "Send reset link"}
           </Button>
 
+          {mode !== "forgot" && (
+            <>
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={busy}
+                onClick={signInWithGoogle}
+              >
+                <GoogleMark />
+                Continue with Google
+              </Button>
+            </>
+          )}
+
+
           <button
             type="button"
             className="w-full text-xs text-muted-foreground hover:text-foreground"
