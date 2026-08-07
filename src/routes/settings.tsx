@@ -282,18 +282,9 @@ function BiometricsSection() {
 
 function SecurityTab() {
   const { data: profile } = useProfile();
-  const { data: biometrics = [] } = useBiometrics();
-  const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const hasVoice = biometrics.some((b) => b.kind === "voice");
-  const hasFace = biometrics.some((b) => b.kind === "face");
-
-  async function toggle(patch: Record<string, boolean>) {
-    await saveProfile(patch);
-    await queryClient.invalidateQueries({ queryKey: ["profile"] });
-  }
 
   async function changePassword() {
     if (password.length < 8) {
