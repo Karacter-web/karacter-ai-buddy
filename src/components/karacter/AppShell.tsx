@@ -1,6 +1,8 @@
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { KaracterSidebar } from "@/components/karacter/KaracterSidebar";
 import { NotificationBell } from "@/components/karacter/NotificationBell";
+import { InstallPrompt } from "@/components/karacter/InstallPrompt";
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
