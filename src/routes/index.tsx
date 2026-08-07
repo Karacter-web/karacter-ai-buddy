@@ -243,59 +243,38 @@ function Assistant() {
     ],
   );
 
-  const guardedSubmit = useCallback(
-    async (utterance: string) => {
-      if (locked) return;
-      const needsCheck = Boolean(profile?.require_voice_match || profile?.require_face_match);
-      if (needsCheck) {
-        setVerifying(true);
-        const verdict = await verifyIdentity(profile, biometrics);
-        setVerifying(false);
-        if (!verdict.ok) {
-          toast.error(`Identity check failed — ${verdict.reason}`);
-          pushNotification({
-            title: "Identity check failed",
-            body: verdict.reason,
-            level: "error",
-          });
-          if (profile?.lock_on_mismatch) {
-            await enforceLockdown(verdict.reason);
-            setLocked(verdict.reason);
-          }
-          return;
-        }
-      }
-      await submit(utterance);
-    },
-    [biometrics, locked, profile, submit],
-  );
+  const greet = useCallback(() => {
+    const name = profile?.nickname || profile?.display_name || "";
+    const greeting = name ? `Hmm, hi there ${name} — what can I do for you?` : "Hmm, hi there — what can I do for you?";
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: greeting,
+        intents: [],
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    speak(greeting, voiceOut);
+  }, [profile, voiceOut]);
 
-  const { listening, supported, start, stop } = useVoice(
-    (transcript) => void guardedSubmit(transcript),
-  );
+  const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
 
   useWakeWord({
-    enabled: Boolean(profile?.wake_word_enabled) && !locked,
+    enabled: Boolean(profile?.wake_word_enabled),
     wakeWord: profile?.wake_word ?? "hey karacter",
-    paused: listening || thinking || verifying,
+    paused: listening || thinking,
     onWake: (remainder) => {
-      if (remainder) void guardedSubmit(remainder);
-      else start();
+      if (remainder) void submit(remainder);
+      else {
+        greet();
+        start();
+      }
     },
   });
 
-  if (locked) {
-    return (
-      <div className="grid min-h-[60vh] place-items-center text-center">
-        <div className="max-w-sm space-y-3">
-          <ShieldAlert className="mx-auto size-10 text-destructive" />
-          <h1 className="text-lg font-semibold">Karacter is locked</h1>
-          <p className="text-sm text-muted-foreground">{locked}</p>
-          <Button onClick={() => void supabase.auth.signOut()}>Sign in again</Button>
-        </div>
-      </div>
-    );
-  }
+
 
 
   return (
