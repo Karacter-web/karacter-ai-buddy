@@ -130,9 +130,11 @@ function Onboarding() {
       await saveProfile({
         onboarding_completed: true,
         wake_word_enabled: true,
-        require_voice_match: hasVoice,
-        require_face_match: hasFace,
+        // Biometric gating is paused while verification is rebuilt.
+        require_voice_match: false,
+        require_face_match: false,
       });
+
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success(`Karacter is trained. Say "Hey Karacter" any time.`);
       void navigate({ to: "/" });

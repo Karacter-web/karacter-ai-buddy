@@ -282,18 +282,9 @@ function BiometricsSection() {
 
 function SecurityTab() {
   const { data: profile } = useProfile();
-  const { data: biometrics = [] } = useBiometrics();
-  const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const hasVoice = biometrics.some((b) => b.kind === "voice");
-  const hasFace = biometrics.some((b) => b.kind === "face");
-
-  async function toggle(patch: Record<string, boolean>) {
-    await saveProfile(patch);
-    await queryClient.invalidateQueries({ queryKey: ["profile"] });
-  }
 
   async function changePassword() {
     if (password.length < 8) {
@@ -314,33 +305,35 @@ function SecurityTab() {
     <div className="space-y-4">
       <Section
         title="Identity verification"
-        description="When enabled, Karacter verifies you before running anything."
+        description="Biometric verification is paused while we rebuild it — Karacter is unlocked for your signed-in account."
       >
         <ToggleRow
           label="Require voice match"
-          hint={hasVoice ? "Checks your voiceprint on activation." : "Enrol your voice first."}
-          disabled={!hasVoice}
-          checked={Boolean(profile?.require_voice_match)}
-          onChange={(v) => void toggle({ require_voice_match: v })}
+          hint="Temporarily unavailable — rolling out soon."
+          disabled
+          checked={false}
+          onChange={() => undefined}
         />
         <ToggleRow
           label="Require face match"
-          hint={hasFace ? "Checks a camera frame on activation." : "Enrol your face first."}
-          disabled={!hasFace}
-          checked={Boolean(profile?.require_face_match)}
-          onChange={(v) => void toggle({ require_face_match: v })}
+          hint="Temporarily unavailable — rolling out soon."
+          disabled
+          checked={false}
+          onChange={() => undefined}
         />
         <ToggleRow
           label="Lock down on mismatch"
-          hint="Blank the session and require sign-in again when verification fails."
-          checked={Boolean(profile?.lock_on_mismatch)}
-          onChange={(v) => void toggle({ lock_on_mismatch: v })}
+          hint="Temporarily unavailable — rolling out soon."
+          disabled
+          checked={false}
+          onChange={() => undefined}
         />
         <p className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
-          A browser cannot lock a phone or hibernate a PC — that needs OS privileges. Karacter locks
-          itself and can escalate to a real OS lock through a paired local agent capability.
+          Your Supabase account session is the active security factor. Voice and face enrolment still
+          works in training — those signatures will power verification when it returns.
         </p>
       </Section>
+
 
       <Section title="Password" description="Change the password for this account.">
         <div className="flex flex-col gap-2 sm:flex-row">
