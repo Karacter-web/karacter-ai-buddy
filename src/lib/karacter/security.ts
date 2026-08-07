@@ -16,19 +16,29 @@ export type VerificationResult = {
 };
 
 /**
- * Gate assistant activation behind the enrolled identity.
- * Returns ok:true when no identity checks are enabled.
+ * Gate assistant activation behind the authenticated account first, then the
+ * enrolled identity. Biometrics are a second factor layered on top of the
+ * Supabase session — never a replacement for it.
  */
 export async function verifyIdentity(
   profile: Profile | null,
   enrollments: BiometricEnrollment[],
 ): Promise<VerificationResult> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    return { ok: false, reason: "Your session expired — sign in again to use Karacter" };
+  }
+  if (profile && profile.user_id !== data.user.id) {
+    return { ok: false, reason: "Enrolled identity does not belong to this account" };
+  }
+
   if (!profile) return { ok: true, reason: "no profile checks" };
   const needsVoice = profile.require_voice_match;
   const needsFace = profile.require_face_match;
   if (!needsVoice && !needsFace) return { ok: true, reason: "identity checks off" };
 
   const result: VerificationResult = { ok: true, reason: "verified" };
+
 
   if (needsVoice) {
     const enrolled = enrollments.find((e) => e.kind === "voice");
