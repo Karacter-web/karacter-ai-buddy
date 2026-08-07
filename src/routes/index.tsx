@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, MicOff, Send, ShieldAlert, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/karacter/AppShell";
@@ -16,8 +16,7 @@ import { executeIntent } from "@/lib/karacter/executor";
 import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
 import { speak, useVoice } from "@/lib/karacter/useVoice";
 import { pushNotification } from "@/lib/karacter/notifications";
-import { useBiometrics, useConsents, useMemories, useProfile, personaSummary } from "@/lib/karacter/profile";
-import { enforceLockdown, verifyIdentity } from "@/lib/karacter/security";
+import { useConsents, useMemories, useProfile, personaSummary } from "@/lib/karacter/profile";
 import { useWakeWord } from "@/lib/karacter/wakeword";
 import {
   createConversation,
@@ -73,8 +72,6 @@ function Assistant() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [voiceOut, setVoiceOut] = useState(true);
-  const [locked, setLocked] = useState<string | null>(null);
-  const [verifying, setVerifying] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const plan = useServerFn(planUtterance);
@@ -83,7 +80,6 @@ function Assistant() {
   const { data: integrations = [] } = useIntegrations();
   const { data: stored } = useConversationMessages(conversationParam);
   const { data: profile = null } = useProfile();
-  const { data: biometrics = [] } = useBiometrics();
   const { data: memories = [] } = useMemories();
   const { data: consents = [] } = useConsents();
   const learningOn = consents.some((c) => c.consent_key === "adaptive_learning" && c.granted);
@@ -293,7 +289,7 @@ function Assistant() {
         </button>
         <div>
           <p className="text-sm font-medium">
-            {locked ? "Locked" : verifying ? "Verifying you…" : listening ? "Listening…" : thinking ? "Thinking…" : profile?.wake_word_enabled ? `Say “${profile.wake_word}” or tap to speak` : "Tap to speak"}
+            {listening ? "Listening…" : thinking ? "Thinking…" : profile?.wake_word_enabled ? `Say “${profile.wake_word}” or tap to speak` : "Tap to speak"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {available.length} capabilit{available.length === 1 ? "y" : "ies"} connected
@@ -345,7 +341,7 @@ function Assistant() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void guardedSubmit(input);
+          void submit(input);
         }}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 p-3 backdrop-blur"
       >
