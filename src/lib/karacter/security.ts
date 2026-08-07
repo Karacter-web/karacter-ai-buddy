@@ -98,3 +98,16 @@ export async function enforceLockdown(reason: string) {
   toast.error(`Karacter locked: ${reason}`);
   window.dispatchEvent(new CustomEvent("karacter:lock", { detail: { reason } }));
 }
+
+/**
+ * Account-password fallback for when biometrics are unavailable
+ * (no microphone, bad lighting) but the user must still prove identity.
+ */
+export async function verifyWithAccountPassword(password: string): Promise<VerificationResult> {
+  const { data } = await supabase.auth.getUser();
+  const email = data.user?.email;
+  if (!email) return { ok: false, reason: "No signed-in account" };
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { ok: false, reason: "Password did not match" };
+  return { ok: true, reason: "verified by account password" };
+}
