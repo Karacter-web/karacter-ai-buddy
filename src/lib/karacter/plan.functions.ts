@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { chatJson } from "./ai.server";
 
 const PlanInput = z.object({
   utterance: z.string().min(1).max(2000),
@@ -38,9 +39,6 @@ export const planUtterance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => PlanInput.parse(input))
   .handler(async ({ data }) => {
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
-
     const registry = data.capabilities.length
       ? data.capabilities
           .map(
@@ -52,31 +50,14 @@ export const planUtterance = createServerFn({ method: "POST" })
           .join("\n")
       : "(no capabilities connected)";
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-3.6-flash",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: `${SYSTEM}\n\nCAPABILITY REGISTRY:\n${registry}${data.persona ? `\n\n${data.persona}` : ""}`,
-          },
-          ...data.history,
-          { role: "user", content: data.utterance },
-        ],
-      }),
-    });
-
-    if (response.status === 429) throw new Error("Karacter is rate limited. Try again shortly.");
-    if (response.status === 402) throw new Error("AI credits exhausted. Add credits to continue.");
-    if (!response.ok) throw new Error(`AI gateway error ${response.status}: ${await response.text()}`);
-
-    const payload = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const raw = payload.choices?.[0]?.message?.content ?? "{}";
+    const raw = await chatJson([
+      {
+        role: "system",
+        content: `${SYSTEM}\n\nCAPABILITY REGISTRY:\n${registry}${data.persona ? `\n\n${data.persona}` : ""}`,
+      },
+      ...data.history,
+      { role: "user", content: data.utterance },
+    ]);
 
     try {
       const parsed = JSON.parse(raw) as { speech?: string; intents?: unknown };
