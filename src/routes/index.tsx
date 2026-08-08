@@ -6,7 +6,9 @@ import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/karacter/AppShell";
-import { AuthGate } from "@/components/karacter/AuthGate";
+import { Landing } from "@/components/karacter/Landing";
+import { useSession } from "@/hooks/useSession";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
