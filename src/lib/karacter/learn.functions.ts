@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { chatJson, readAiConfig } from "./ai.server";
 
 export const learnFromConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -16,8 +17,9 @@ export const learnFromConversation = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    // Memory distillation is best-effort: a deployment without an AI key must
+    // still let the conversation itself work.
+    if (!readAiConfig()) return { saved: 0 };
 
     const system = `You extract durable, reusable facts about a user from an assistant conversation.
 Only keep information that will still be true next week: names, nicknames, preferences, routines, tools, locations, constraints, style of address.
@@ -26,34 +28,25 @@ Skip anything already in KNOWN FACTS.
 Respond ONLY with JSON: {"memories":[{"content":"...","category":"identity|preference|routine|tooling|general","confidence":0.0}]}
 Return an empty array when nothing durable was said.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({
-        model: "google/gemini-3.6-flash",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: `${system}\n\nKNOWN FACTS:\n${data.known.map((k) => `- ${k}`).join("\n") || "(none)"}`,
-          },
-          {
-            role: "user",
-            content: data.transcript.map((t) => `${t.role}: ${t.content}`).join("\n"),
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) return { saved: 0 };
-
-    const payload = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
+    let raw = "{}";
+    try {
+      raw = await chatJson([
+        {
+          role: "system",
+          content: `${system}\n\nKNOWN FACTS:\n${data.known.map((k) => `- ${k}`).join("\n") || "(none)"}`,
+        },
+        {
+          role: "user",
+          content: data.transcript.map((t) => `${t.role}: ${t.content}`).join("\n"),
+        },
+      ]);
+    } catch {
+      return { saved: 0 };
+    }
 
     let memories: Array<{ content?: string; category?: string; confidence?: number }> = [];
     try {
-      const parsed = JSON.parse(payload.choices?.[0]?.message?.content ?? "{}") as {
+      const parsed = JSON.parse(raw) as {
         memories?: unknown;
       };
       if (Array.isArray(parsed.memories)) memories = parsed.memories.slice(0, 8);
