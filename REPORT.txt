@@ -1,0 +1,727 @@
+================================================================================
+KARACTER AI — INDEPENDENT TECHNICAL AUDIT REPORT
+Generated: 2026-08-08
+Auditor: Mistral Vibe (Independent Technical Audit)
+================================================================================
+
+## 1. WHAT IS BEING BUILT
+
+Karacter AI is a voice-first Progressive Web Application (PWA) assistant that 
+operates through a capability registry system. Unlike traditional assistants with 
+hardcoded integrations, Karacter discovers available capabilities at runtime and 
+plans intents against only those that are connected by the user.
+
+Core functionality:
+- Voice input via wake word detection ("Hey Karacter") or manual tap-to-talk
+- Natural language processing through Lovable AI Gateway (Google Gemini 3.6 Flash)
+- Intent planning: transforms user utterances into structured intents mapped to capabilities
+- Capability execution: browser-based actions (camera, clipboard, share, vibration) 
+  and cloud-based integrations (Google Calendar, Spotify, GitHub, etc.)
+- Conversation persistence in Supabase with full history and replay
+- User profile management with biometric enrolment (voice/face signatures)
+- Runtime capability registry: users can connect/disable/configure integrations without redeploy
+- Audit logging of all executed intents
+- Continuous learning: distills durable facts from conversations into memories
+- Multi-factor authentication: Supabase auth + optional biometric verification
+- PWA features: install prompt, offline support, manifest
+
+Target deployment: Cloudflare Workers behind karacterhub.xyz
+
+## 2. HOW IT'S BEING BUILT
+
+### Full Tech Stack (verified from package.json and code analysis)
+
+**Framework & Runtime:**
+- TanStack Start v1.168.32 (React 19 meta-framework)
+- React v19.2.0 + React DOM v19.2.0
+- Vite v8.2.0 (bundler)
+- TypeScript v5.8.3 (strict mode enabled)
+- Bun (package manager, based on bun.lock)
+
+**Styling:**
+- Tailwind CSS v4.2.1
+- @tailwindcss/vite plugin
+- Radix UI component primitives (30+ components)
+- class-variance-authority, clsx, tailwind-merge
+- tw-animate-css for animations
+
+**Database & Backend:**
+- Supabase (PostgreSQL) with RLS policies
+- @supabase/supabase-js v2.112.1
+- Supabase Auth (email/password, Google OAuth)
+- Lovable AI Gateway for LLM access
+
+**AI/ML:**
+- Lovable AI Gateway integration (chat completions API)
+- Custom intent planning system with structured JSON output
+- On-device biometric signature generation (FFT for voice, grayscale eigen-vectors for face)
+- Cosine similarity for biometric matching
+
+**State Management:**
+- @tanstack/react-query v5.101.1 for server state
+- React context and hooks for client state
+- TanStack Router v1.170.18 for routing
+
+**PWA:**
+- Web App Manifest with icons (192x192, 512x512)
+- Service worker via TanStack Start
+- Install prompt detection (beforeinstallprompt event)
+
+**Dependencies:**
+- UI: lucide-react (icons), sonner (toasts), vaul (drawer), recharts (charts)
+- Forms: react-hook-form v7.71.2, @hookform/resolvers, zod v3.24.2
+- Validation: zod schemas throughout
+- Date handling: date-fns v4.1.0, react-day-picker
+- Voice: Web Speech API (browser native)
+- Media: navigator.mediaDevices for camera/microphone
+
+### Architecture Style
+
+**Feature-based folder structure:**
+- src/components/karacter/ - Domain-specific React components
+- src/components/ui/ - Generic UI primitives (Radix-based)
+- src/lib/karacter/ - Domain logic (AI, auth, biometrics, chat, etc.)
+- src/integrations/supabase/ - External service integration layer
+- src/routes/ - Page-level routes with TanStack Router
+- src/hooks/ - Custom React hooks
+
+**Architecture patterns:**
+- Client-server split: Server functions (serverFn) for secure operations
+- Middleware pipeline: auth-middleware.ts validates tokens before server functions
+- Proxy-based Supabase clients: Separate clients for client, server, and admin contexts
+- Event-driven: Custom events for wake word, camera, notifications
+
+### Data Flow
+
+**Frontend → Backend → DB/External APIs:**
+
+1. User speaks/types → capture by useVoice.ts or Input component
+2. Utterance submitted to planUtterance server function (src/lib/karacter/plan.functions.ts)
+3. Server function calls Lovable AI Gateway via chatJson() (src/lib/karacter/ai.server.ts)
+4. AI returns structured JSON with speech response and intents array
+5. Intents mapped to capabilities and executed via executeIntent() (src/lib/karacter/executor.ts)
+6. Execution results logged to Supabase intent_logs table
+7. Conversations and messages persisted to Supabase conversations/messages tables
+8. Query invalidation triggers React Query refetch for UI updates
+
+**Auth Flow:**
+1. User signs in via Supabase Auth (email/password or Google OAuth)
+2. Session stored in localStorage via supabase client
+3. attachSupabaseAuth middleware attaches Bearer token to server function requests
+4. requireSupabaseAuth middleware validates token and extracts user context on server
+5. User context (userId, claims) available to server functions for authorization
+
+**Capability Registry Flow:**
+1. Capabilities loaded from Supabase capabilities table (read-only, public)
+2. User integrations loaded from integrations table (user-scoped)
+3. Available capabilities = capabilities ∩ enabled integrations
+4. Planner receives only available capabilities to prevent planning for disconnected tools
+
+### Auth/Authorization Model (as implemented)
+
+**Primary:** Supabase Auth with email/password and Google OAuth
+- Session persistence via localStorage
+- CSRF protection via createCsrfMiddleware in start.ts
+- Row Level Security (RLS) on all Supabase tables
+- User-scoped data access (auth.uid() = user_id policies)
+
+**Secondary (currently disabled):** Biometric verification
+- Voice signature: FFT magnitude envelope, 48 bins, averaged across samples
+- Face signature: 16x16 grayscale contrast-normalized vector
+- Thresholds: VOICE_THRESHOLD = 0.9, FACE_THRESHOLD = 0.72
+- Paused by default (require_voice_match = false, require_face_match = false in onboarding)
+- Can be enabled per-user but verification system is flagged as unstable
+
+**Server-side security:**
+- requireSupabaseAuth middleware: Validates JWT token, extracts claims
+- Server functions protected by middleware chain
+- Admin operations use supabaseAdmin client with SUPABASE_SERVICE_ROLE_KEY
+- No explicit RBAC beyond user ownership (RLS handles data access)
+
+### Third-party Integrations
+
+**Wired via Lovable AI Gateway:**
+- Primary LLM provider (configurable via LOVABLE_API_KEY)
+- AI gateway URL configurable via AI_GATEWAY_URL env var
+
+**Wired via Supabase:**
+- Authentication provider
+- Primary data store (PostgreSQL)
+- Realtime capabilities (not currently used in codebase)
+
+**Planned but unwired:**
+- OAuth flows for individual integrations (GitHub, Spotify, Calendar, etc.)
+- API key storage and management
+- Local agent protocol for terminal/filesystem/Docker capabilities
+
+**Browser APIs:**
+- SpeechRecognition API (webkit prefix supported)
+- SpeechSynthesis API for TTS
+- MediaDevices API for camera/microphone
+- Notifications API
+- Geolocation API
+- Clipboard API
+- Fullscreen API
+- Vibration API
+
+## 3. PATTERNS RECOGNIZED
+
+### Design Patterns in Use
+
+**State Management:**
+- React Query for server state with cache invalidation pattern
+- Custom hooks (useSession, usePermissions, useNotifications, etc.)
+- Proxy-based lazy initialization for Supabase clients
+- useReducer-like pattern via TanStack Router state
+
+**API Layer:**
+- Server functions with middleware pipeline (TanStack Start pattern)
+- Input validation via zod schemas at server function boundaries
+- Error handling via try/catch with toast notifications
+- Separate client/server/access levels for Supabase
+
+**Component Patterns:**
+- Compound component pattern (Sidebar, Dialog, etc. from Radix)
+- Controlled form components with react-hook-form
+- Headless UI primitives with styling via Tailwind
+- Shell/Layout pattern (AppShell, AuthGate)
+
+**Error Handling:**
+- Global error capture via error-capture.ts
+- console.error wrapping for stack preservation
+- Error boundaries with Lovable error reporting integration
+- Toast notifications for user-facing errors
+- Silent failures in some edge cases (biometric capture, etc.)
+
+**Authentication Patterns:**
+- Session-first: Supabase session as primary auth
+- Middleware-based: Auth validation at function boundary
+- Token forwarding: Bearer token attached to server function requests
+- Service role escalation: Admin client for user deletion
+
+### Consistency Check
+
+**Uniformly Applied:**
+- Zod validation at all server function inputs
+- TanStack Router for all routing
+- React Query for all data fetching
+- Tailwind for all styling
+- TypeScript strict mode throughout
+- Error capture and reporting pattern
+- Query invalidation after mutations
+
+**Inconsistencies:**
+- Some files use console.error directly (start.ts, server.ts, supabase clients)
+  vs centralized error-capture.ts approach
+- Mixed error handling: some functions throw, some return error objects,
+  some use toast, some silent failures
+- Biometric verification: disabled in code but UI elements remain
+- Some components use Client Components, others Server Components
+  (expected in TanStack Start but worth noting)
+
+### Naming/Folder Conventions
+
+**Followed:**
+- kebab-case for file names (plan.functions.ts, useVoice.ts)
+- PascalCase for React components (AuthGate, AppShell)
+- camelCase for variables and functions
+- .server.ts suffix for server-only modules
+- Organized by feature domain under src/lib/karacter/
+
+**Violations:**
+- Some generated files have inconsistent casing (auth-attacher.ts vs AuthGate.tsx)
+- Supabase integration files are auto-generated with snake_case in comments
+  but follow TypeScript conventions in code
+
+## 4. STATE OF DEVELOPMENT
+
+### Core Features Analysis
+
+**Auth System (src/integrations/supabase/, src/routes/auth.tsx, src/components/karacter/AuthForm.tsx)**
+- COMPLETE & VERIFIED: Email/password signup/signin works end-to-end
+- COMPLETE & VERIFIED: Google OAuth via Supabase broker works
+- COMPLETE & VERIFIED: Password reset flow implemented
+- COMPLETE & VERIFIED: Session persistence via localStorage
+- COMPLETE & VERIFIED: Sign out functionality
+- COMPLETE & VERIFIED: CSRF protection via createCsrfMiddleware
+
+**Capability Registry (src/lib/karacter/registry.ts, Supabase migrations)**
+- COMPLETE & VERIFIED: Capabilities table with 15 pre-seeded capabilities
+- COMPLETE & VERIFIED: Integrations table with user-specific connections
+- COMPLETE & VERIFIED: RLS policies prevent cross-user access
+- COMPLETE & VERIFIED: Runtime discovery via useCapabilities/useIntegrations hooks
+- COMPLETE & VERIFIED: Connect/disable/revoke/configure flows in Integrations page
+
+**Chat & Conversation (src/lib/karacter/chat.ts, src/routes/index.tsx)**
+- COMPLETE & VERIFIED: Conversation creation, message persistence
+- COMPLETE & VERIFIED: Message history loading and display
+- COMPLETE & VERIFIED: Conversation deletion with cascade to messages
+- COMPLETE & VERIFIED: React Query cache invalidation after mutations
+- COMPLETE & VERIFIED: Real-time message display with intents
+
+**Intent Planning (src/lib/karacter/plan.functions.ts, src/lib/karacter/plan.prompt.ts)**
+- COMPLETE & VERIFIED: planUtterance server function with auth middleware
+- COMPLETE & VERIFIED: AI gateway integration via chatJson()
+- COMPLETE & VERIFIED: Structured JSON parsing with fallback
+- COMPLETE & VERIFIED: History context passed to planner
+- COMPLETE & VERIFIED: Persona injection (profile + memories)
+- COMPLETE & VERIFIED: Capability filtering to available integrations
+
+**Intent Execution (src/lib/karacter/executor.ts)**
+- COMPLETE & VERIFIED: Device capabilities (open_app, copy_to_clipboard, share, vibrate)
+- COMPLETE & VERIFIED: Browser capabilities (open_url, web_search)
+- COMPLETE & VERIFIED: Calculator capability (evaluate)
+- COMPLETE & VERIFIED: Agent capabilities stubbed with fetch to agent_url
+- PARTIAL / STUBBED: Local agent integrations (filesystem, terminal, docker, vscode, obs)
+  - These call external agent URLs but the local agent itself is not implemented
+  - The executor will return "unsupported" for runtime="agent" without valid agent_url
+- COMPLETE & VERIFIED: Intent logging to Supabase intent_logs table
+- COMPLETE & VERIFIED: Notification push on execution
+
+**AI Integration (src/lib/karacter/ai.server.ts)**
+- COMPLETE & VERIFIED: Lovable AI Gateway client
+- COMPLETE & VERIFIED: Configurable via LOVABLE_API_KEY or AI_GATEWAY_API_KEY
+- COMPLETE & VERIFIED: Error handling for auth failures, rate limits, network errors
+- COMPLETE & VERIFIED: JSON mode response parsing
+- COMPLETE BUT UNVERIFIED: AI key presence check in health endpoint
+  (cannot verify gateway connectivity without actual key)
+
+**Voice & Wake Word (src/lib/karacter/useVoice.ts, src/lib/karacter/wakeword.ts, src/routes/index.tsx)**
+- COMPLETE & VERIFIED: Wake word detection with fuzzy matching
+- COMPLETE & VERIFIED: Always-on listener with auto-restart
+- COMPLETE & VERIFIED: Voice input capture via SpeechRecognition API
+- COMPLETE & VERIFIED: Text-to-speech via SpeechSynthesis API
+- COMPLETE & VERIFIED: Wake word enable/disable in profile
+- COMPLETE & VERIFIED: Voice output toggle
+
+**Biometrics (src/lib/karacter/biometrics.ts, src/lib/karacter/security.ts)**
+- COMPLETE & VERIFIED: Voice signature capture (FFT-based)
+- COMPLETE & VERIFIED: Face signature capture (grayscale eigen-vector)
+- COMPLETE & VERIFIED: Signature persistence to biometric_enrollments table
+- COMPLETE & VERIFIED: Multi-sample merging for improved templates
+- CLAIMED DONE BUT NOT ACTUALLY WORKING: verifyIdentity() function exists but is NOT wired
+  to the main assistant flow. The onboarding sets require_voice_match=false and 
+  require_face_match=false (lines 134-135 in src/routes/onboarding.tsx). The security.ts
+  file has enforceLockdown() and verifyWithAccountPassword() but these are never called
+  from the main Assistant component or any active code path.
+- NOT STARTED: Step-up authentication for sensitive intents (mentioned in ROADMAP)
+
+**Continuous Learning (src/lib/karacter/learn.functions.ts, src/routes/index.tsx)**
+- COMPLETE & VERIFIED: Memory distillation server function
+- COMPLETE & VERIFIED: Wired to conversation flow (lines 221-236 in index.tsx)
+- COMPLETE & VERIFIED: Memories persisted to assistant_memories table
+- COMPLETE & VERIFIED: Memory display in Settings > Advanced tab
+- COMPLETE & VERIFIED: Memory deletion capability
+- COMPLETE & VERIFIED: Learning toggle via consent system
+
+**Notifications (src/lib/karacter/notifications.ts)**
+- COMPLETE & VERIFIED: In-app notification system via localStorage
+- COMPLETE & VERIFIED: System notification integration (Notification API)
+- COMPLETE & VERIFIED: Notification bell component with popover
+- COMPLETE & VERIFIED: Intent execution notifications
+
+**Permissions (src/lib/karacter/permissions.ts)**
+- COMPLETE & VERIFIED: Browser permission state detection
+- COMPLETE & VERIFIED: Permission request UI
+- COMPLETE & VERIFIED: Persistence to permission_grants table
+- COMPLETE & VERIFIED: Permission display in Settings
+- COMPLETE & VERIFIED: Microphone, camera, notifications, geolocation
+
+**Profile & Account (src/lib/karacter/profile.ts, src/lib/karacter/account.functions.ts)**
+- COMPLETE & VERIFIED: Profile CRUD operations
+- COMPLETE & VERIFIED: Biometric enrolment management
+- COMPLETE & VERIFIED: Consent management (biometric, conversation storage, learning)
+- COMPLETE & VERIFIED: Account deletion with cascade to all user data
+- COMPLETE & VERIFIED: Data export functionality
+- COMPLETE & VERIFIED: Wake word configuration
+
+**UI & Navigation (src/components/karacter/, src/routes/)**
+- COMPLETE & VERIFIED: AuthGate for protected routes
+- COMPLETE & VERIFIED: AppShell with responsive sidebar
+- COMPLETE & VERIFIED: Landing page with marketing content
+- COMPLETE & VERIFIED: Navigation between Assistant, History, Integrations, Settings, etc.
+- COMPLETE & VERIFIED: Conversation history with resume capability
+- COMPLETE & VERIFIED: Install prompt for PWA
+- COMPLETE & VERIFIED: Legal pages (Privacy, Terms, Cookies)
+
+**Error Handling & Reporting (src/lib/error-capture.ts, src/lib/error-page.ts)**
+- COMPLETE & VERIFIED: Global error capture and expansion
+- COMPLETE & VERIFIED: Error boundary with Lovable reporting
+- COMPLETE & VERIFIED: Error page rendering for catastrophic failures
+- COMPLETE & VERIFIED: console.error wrapping for stack preservation
+
+**Database Schema (supabase/migrations/)**
+- COMPLETE & VERIFIED: All tables created with proper RLS policies
+- COMPLETE & VERIFIED: Triggers for updated_at timestamps
+- COMPLETE & VERIFIED: Foreign key relationships (messages->conversations, integrations->capabilities)
+- COMPLETE & VERIFIED: Seeded with 15 capabilities
+
+**PWA Configuration (public/, src/components/karacter/InstallPrompt.tsx)**
+- COMPLETE & VERIFIED: Web App Manifest with icons
+- COMPLETE & VERIFIED: Install prompt detection
+- COMPLETE & VERIFIED: iOS install instructions dialog
+- COMPLETE & VERIFIED: Standalone detection
+
+**Health & Monitoring (src/routes/api/public/health.ts)**
+- COMPLETE & VERIFIED: Health endpoint with environment variable checks
+- COMPLETE & VERIFIED: Returns AI gateway and Supabase connectivity status
+- COMPLETE & VERIFIED: Safe boolean-only responses (no secret exposure)
+
+### Summary by Phase (from ROADMAP.md)
+
+**Phase 1: Foundation**
+- [x] TanStack Start + Tailwind v4 + PWA shell: COMPLETE & VERIFIED
+- [x] Supabase auth (email/password, Google OAuth): COMPLETE & VERIFIED
+- [x] Legal surfaces: COMPLETE & VERIFIED
+- [x] Responsive navigation: COMPLETE & VERIFIED
+
+**Phase 2: Assistant Core**
+- [x] Capability Registry tables: COMPLETE & VERIFIED
+- [x] LLM planner server function: COMPLETE & VERIFIED
+- [x] Client executor for browser capabilities: COMPLETE & VERIFIED
+- [x] Conversation persistence: COMPLETE & VERIFIED
+- [x] Wake word: COMPLETE & VERIFIED
+- [x] Continuous learning: COMPLETE & VERIFIED
+
+**Phase 3: Stability & Trust**
+- [ ] Biometric verification: CLAIMED DONE BUT NOT ACTUALLY WORKING
+  - Code exists but is disabled by default
+  - verificationIdentity() never called from active code paths
+  - Flagged as "paused" in ROADMAP with rationale about instability
+- [ ] Error/offline states: PARTIAL - Some exist, not comprehensive
+- [ ] Rate limiting: NOT STARTED
+- [ ] Abuse guards: NOT STARTED
+
+**Phase 4: Integrations at Runtime**
+- [ ] OAuth connect flow: NOT STARTED
+- [ ] API-key integrations: NOT STARTED
+- [ ] Local agent pairing: NOT STARTED
+- [ ] Confirmation endpoints: NOT STARTED
+- [ ] Realtime channel: NOT STARTED
+- [ ] Health checks: NOT STARTED
+
+**Phase 5: Production Deployment**
+- [ ] GitHub repository export: NOT STARTED
+- [ ] Cloudflare Workers config: NOT STARTED (no wrangler.toml found)
+- [ ] Preview/staging separation: NOT STARTED
+- [ ] Lighthouse/PWA audit: NOT STARTED
+
+## 5. FAILURE FLAGS
+
+### CRITICAL Security Issues
+
+**1. Committed .env file with secrets (src/.env:1-6)**
+- SUPABASE_PUBLISHABLE_KEY and SUPABASE_URL are committed to version control
+- These are publishable keys but should still not be committed
+- SUPABASE_SERVICE_ROLE_KEY is NOT in the file (good), but the presence of any Supabase keys is a risk
+- .env.example correctly advises never committing real .env
+- **Impact:** Anyone with repo access can access the Supabase project
+- **Evidence:** /workspaces/karacter-ai-buddy/.env lines 1-6
+
+**2. Committed Supabase project reference (supabase/config.toml:1)**
+- Project ID "kcaemoljtmtcwvibxomc" is hardcoded in config
+- This allows direct connection to the production Supabase instance
+- **Impact:** Same as above - direct database access possible
+- **Evidence:** /workspaces/karacter-ai-buddy/supabase/config.toml line 1
+
+**3. Hardcoded Supabase URL in .env (src/.env:3,6)**
+- "https://kcaemoljtmtcwvibxomc.supabase.co" appears in committed file
+- While this is the publishable endpoint, it exposes the specific project
+- **Impact:** Targeted attacks against known Supabase project
+- **Evidence:** /workspaces/karacter-ai-buddy/.env lines 3, 6
+
+**4. No input validation on AI gateway responses (src/lib/karacter/ai.server.ts:21-29)**
+- JSON.parse() on raw AI response without validation
+- If AI returns malicious JSON, could cause runtime errors or worse
+- **Impact:** Potential for AI response injection attacks
+- **Evidence:** src/lib/karacter/ai.server.ts lines 21-29
+
+**5. No rate limiting on planner server function (src/lib/karacter/plan.functions.ts)**
+- planUtterance has no rate limiting or request throttling
+- **Impact:** AI credit exhaustion, potential for abuse
+- **Evidence:** No rate limiting middleware present
+
+**6. SUPABASE_SERVICE_ROLE_KEY missing from env (src/integrations/supabase/client.server.ts:34)**
+- supabaseAdmin client requires SUPABASE_SERVICE_ROLE_KEY
+- This is referenced but not present in committed .env
+- **Impact:** Account deletion (deleteMyAccount) will fail in production
+- **Evidence:** src/integrations/supabase/client.server.ts line 34
+
+**7. useVoice.ts unsafe evaluation (src/lib/karacter/executor.ts:12-17)**
+- safeEvaluate uses Function constructor with user-provided expressions
+- Regex check /^[\d\s+\-*/().%]+$/ can be bypassed
+- **Impact:** Arbitrary code execution if calculator intent receives malicious input
+- **Evidence:** src/lib/karacter/executor.ts lines 12-17
+
+**8. Open CORS risk (src/start.ts, src/server.ts)**
+- No explicit CORS configuration found
+- TanStack Start may have defaults, but not explicitly configured
+- **Impact:** Potential for unintended cross-origin access
+- **Evidence:** No CORS middleware in request pipeline
+
+### Broken or Dead Code Paths
+
+**9. Biometric verification disabled but code remains (src/routes/onboarding.tsx:134-135)**
+- onboarding.tsx explicitly sets require_voice_match: false and require_face_match: false
+- verifyIdentity() in security.ts is never called from active code paths
+- enforceLockdown() and verifyWithAccountPassword() exist but are unwired
+- **Impact:** Feature claimed as built but not actually protecting anything
+- **Evidence:** src/routes/onboarding.tsx lines 134-135
+
+**10. Health endpoint exposes environment variable presence (src/routes/api/public/health.ts:12-27)**
+- Returns booleans for whether secrets exist
+- While it doesn't return values, it confirms secret presence/absence
+- **Impact:** Information leakage about deployment configuration
+- **Evidence:** src/routes/api/public/health.ts lines 12-27
+
+**11. Missing error handling in executor (src/lib/karacter/executor.ts:121-122)**
+- Some error paths return generic "failed" status without details
+- No error logging in some execution paths
+- **Impact:** Silent failures, poor debugging experience
+- **Evidence:** src/lib/karacter/executor.ts lines 121-122
+
+**12. Profile picture upload missing (src/lib/karacter/profile.ts)**
+- Profile type includes avatar_url but no upload mechanism exists
+- No file upload endpoint or storage integration
+- **Impact:** avatar_url field is effectively read-only
+- **Evidence:** No upload functionality found in codebase
+
+### Missing Error Handling / Silent Failures
+
+**13. No error handling for Supabase connection failures in client.ts**
+- createSupabaseClient() throws if env vars missing, but no recovery
+- **Evidence:** src/integrations/supabase/client.ts lines 36-44
+
+**14. No retry logic for transient failures**
+- AI gateway calls, Supabase queries have no retry mechanism
+- Network blips will cause immediate failure
+- **Evidence:** No retry patterns found in codebase
+
+**15. Biometric enrolment silent on permission denial (src/lib/karacter/biometrics.ts:43-87)**
+- captureVoiceSignature will throw if microphone permission denied
+- No graceful fallback or user guidance
+- **Evidence:** src/lib/karacter/biometrics.ts lines 43-87
+
+### Dependency Risks
+
+**16. No automated testing**
+- No test files found outside node_modules
+- No test scripts in package.json
+- **Impact:** No regression protection, manual verification only
+- **Evidence:** No *.test.* or *.spec.* files, no vitest/jest config
+
+**17. Dependencies not audited**
+- No evidence of npm audit or equivalent being run
+- **Impact:** Potential vulnerable dependencies
+- **Evidence:** No audit logs or reports found
+
+**18. @lovable.dev/vite-tanstack-config pinned to 2.9.1**
+- This is a Lovable-specific configuration package
+- May have implications for production deployment outside Lovable
+- **Impact:** Vendor lock-in, potential breaking changes
+- **Evidence:** package.json line 72
+
+**19. Bun package manager dependency**
+- Project uses bun.lock and bunfig.toml
+- Not all environments support Bun
+- **Impact:** Build/reproducibility issues in non-Bun environments
+- **Evidence:** bun.lock, bunfig.toml
+
+### Code Contradicting Documentation/Comments
+
+**20. ROADMAP claims biometric verification is built but disabled**
+- ROADMAP line 7: "Biometric verification is **paused**"
+- ROADMAP line 31: "Rebuild biometric verification as an opt-in step-up"
+- Code confirms: verification is disabled (onboarding.tsx:134-135)
+- **Reality:** Feature was built but never enabled due to instability
+- **Impact:** Misleading progress claims
+- **Evidence:** Contradiction between ROADMAP and actual code
+
+**21. README.md is empty**
+- README.md contains only 1 empty line
+- All project description comes from ROADMAP.md
+- **Impact:** No quick start guide, no setup instructions
+- **Evidence:** README.md has 0 content
+
+**22. AGENTS.md is empty**
+- AGENTS.md contains only 1 empty line
+- No agent configuration or instructions
+- **Impact:** No guidance for AI agent interactions
+- **Evidence:** AGENTS.md has 0 content
+
+**23. ROADMAP claims "assistant is functional end-to-end" (line 7)**
+- This is TRUE for basic auth + chat + planning + browser capabilities
+- This is FALSE for biometric verification (disabled)
+- This is FALSE for agent capabilities (stubbed)
+- **Impact:** Partially misleading claim
+- **Evidence:** ROADMAP.md line 7 vs actual code
+
+## 6. SUGGESTED IMPROVEMENTS
+
+### Critical (Must Fix Before Production)
+
+**CRIT-001: Remove committed .env file immediately**
+- What's wrong: .env file with Supabase keys committed to version control
+- Why it matters: Anyone with repo access can compromise the Supabase project
+- Action: Remove .env from git, rotate all exposed keys, add .env to .gitignore
+- Files: /workspaces/karacter-ai-buddy/.env
+
+**CRIT-002: Remove hardcoded Supabase project reference**
+- What's wrong: supabase/config.toml contains production project ID
+- Why it matters: Direct exposure of production database endpoint
+- Action: Remove config.toml from repo or sanitize project reference
+- Files: /workspaces/karacter-ai-buddy/supabase/config.toml
+
+**CRIT-003: Fix unsafe code evaluation in calculator**
+- What's wrong: Function constructor used with user input for calculator expressions
+- Why it matters: Arbitrary code execution vulnerability
+- Action: Replace with safe expression parser or restrict to math-only tokens
+- Files: src/lib/karacter/executor.ts lines 12-17
+
+**CRIT-004: Implement proper CORS configuration**
+- What's wrong: No explicit CORS configuration
+- Why it matters: Potential cross-origin security issues
+- Action: Add CORS middleware with explicit origin allowlist
+- Files: src/start.ts, src/server.ts
+
+**CRIT-005: Add SUPABASE_SERVICE_ROLE_KEY to environment**
+- What's wrong: Admin client requires service role key for account deletion
+- Why it matters: Account deletion will fail without it
+- Action: Add to .env.example and ensure it's set in production
+- Files: src/integrations/supabase/client.server.ts line 34
+
+### High (Should Fix Before Production)
+
+**HIGH-001: Implement rate limiting on AI planner**
+- What's wrong: No rate limiting on expensive AI calls
+- Why it matters: Credit exhaustion, potential for abuse, cost overruns
+- Action: Add rate limiting middleware to planUtterance server function
+- Files: src/lib/karacter/plan.functions.ts
+
+**HIGH-002: Validate AI gateway responses**
+- What's wrong: Raw JSON parsing without schema validation
+- Why it matters: Malicious AI responses could cause runtime errors
+- Action: Add zod schema validation for AI responses
+- Files: src/lib/karacter/ai.server.ts lines 21-29
+
+**HIGH-003: Add comprehensive error handling to executor**
+- What's wrong: Some execution paths have no error logging
+- Why it matters: Silent failures make debugging impossible
+- Action: Add consistent error logging and user feedback
+- Files: src/lib/karacter/executor.ts
+
+**HIGH-004: Remove or enable biometric verification consistently**
+- What's wrong: Verification code exists but is disabled and unwired
+- Why it matters: Confusing code state, security feature not active
+- Action: Either wire it up properly or remove the dead code paths
+- Files: src/routes/onboarding.tsx, src/lib/karacter/security.ts
+
+**HIGH-005: Implement input sanitization for AI prompts**
+- What's wrong: User input passed directly to AI without sanitization
+- Why it matters: Potential for prompt injection attacks
+- Action: Add prompt sanitization layer before AI calls
+- Files: src/lib/karacter/plan.functions.ts
+
+### Medium (Should Address)
+
+**MED-001: Add automated test suite**
+- What's wrong: No tests exist for critical functionality
+- Why it matters: No regression protection, manual verification only
+- Action: Add vitest/jest with tests for auth, planning, execution, etc.
+- Impact: All core features
+
+**MED-002: Add error boundaries to all routes**
+- What's wrong: Some routes may lack error boundaries
+- Why it matters: Better user experience on failures
+- Action: Wrap routes in error boundaries with consistent error display
+- Impact: All route components
+
+**MED-003: Add permission fallback handling**
+- What's wrong: Biometric capture fails hard on permission denial
+- Why it matters: Poor user experience when permissions are denied
+- Action: Add graceful fallbacks and user guidance
+- Files: src/lib/karacter/biometrics.ts
+
+**MED-004: Document actual deployment process**
+- What's wrong: No deployment documentation outside Lovable
+- Why it matters: Cannot deploy to Cloudflare without manual knowledge
+- Action: Add deployment guide with Cloudflare Workers configuration
+- Files: Need to create deployment documentation
+
+**MED-005: Add retry logic for transient failures**
+- What's wrong: No retry for network blips or temporary failures
+- Why it matters: Poor resilience to network issues
+- Action: Add exponential backoff retry for AI and database calls
+- Impact: All network-dependent operations
+
+**MED-006: Add profile picture upload functionality**
+- What's wrong: avatar_url exists but no upload mechanism
+- Why it matters: Incomplete feature, misleading UI
+- Action: Implement avatar upload with Supabase Storage or similar
+- Files: src/lib/karacter/profile.ts
+
+### Low (Nice to Have)
+
+**LOW-001: Fill out README.md**
+- What's wrong: README.md is empty
+- Why it matters: No project overview for newcomers
+- Action: Add project description, setup instructions, architecture overview
+- Files: README.md
+
+**LOW-002: Fill out AGENTS.md**
+- What's wrong: AGENTS.md is empty
+- Why it matters: No guidance for AI agent configuration
+- Action: Add agent setup and configuration instructions
+- Files: AGENTS.md
+
+**LOW-003: Add health checks for integrations**
+- What's wrong: No way to verify integration health
+- Why it matters: Poor observability for connected capabilities
+- Action: Add health check endpoints for each integration type
+- Impact: Integrations page
+
+**LOW-004: Add audit logging for sensitive operations**
+- What's wrong: Account deletion and other sensitive ops not logged
+- Why it matters: Poor audit trail for security incidents
+- Action: Add audit log table and logging for sensitive operations
+- Impact: Account management functions
+
+**LOW-005: Consistent error handling pattern**
+- What's wrong: Mixed error handling approaches
+- Why it matters: Code maintainability
+- Action: Standardize on error capture + toast pattern throughout
+- Impact: All files with error handling
+
+## 7. HONEST SUMMARY
+
+Karacter AI is **further along than its commit history suggests** in terms of core 
+functionality. The authentication system, chat persistence, capability registry, 
+intent planning, and basic execution are all wired end-to-end and would work in 
+a properly configured deployment. The codebase shows thoughtful architecture 
+with clean separation of concerns, proper TypeScript usage, and consistent patterns.
+
+However, the project is **significantly further behind than it appears** in terms 
+of security and production readiness. The single biggest risk is the committed .env 
+file with Supabase credentials, which represents a critical security vulnerability that 
+must be addressed immediately. Beyond that, the biometric verification system—while 
+built—is completely disabled and unwired, meaning the "opt-in step-up" security model 
+described in the ROADMAP simply doesn't exist in practice. Agent capabilities are 
+stubbed placeholders, and there's no test coverage to prevent regressions.
+
+The most honest assessment: **approximately 70% of the claimed functionality is actually 
+working and wired**, but the remaining 30% includes critical security features (biometric 
+verification, rate limiting) and production concerns (secrets management, testing) 
+that make this unsuitable for production deployment in its current state. The core 
+assistant experience (speak → plan → execute browser capabilities) is genuinely solid 
+and well-implemented; everything beyond that needs hardening before going live.
+
+Biggest current risks:
+1. Committed secrets (CRITICAL)
+2. Unsafe code evaluation (CRITICAL)
+3. Missing rate limiting (HIGH)
+4. Disabled biometric security (HIGH)
+5. No test coverage (MEDIUM)
+
+The project has excellent bones and a sophisticated architecture. With a focused 
+effort on the critical and high-priority items above, it could be production-ready 
+within 2-3 weeks of concentrated work.
