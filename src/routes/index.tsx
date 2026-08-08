@@ -51,14 +51,33 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => (
-    <AuthGate>
-      <AppShell>
-        <Assistant />
-      </AppShell>
-    </AuthGate>
-  ),
+  component: Home,
 });
+
+/**
+ * "/" is both the marketing page and the assistant: visitors get the landing
+ * page, authenticated users get straight into Karacter with no redirect hop.
+ */
+function Home() {
+  const { session, loading } = useSession();
+
+  if (loading) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background">
+        <div className="size-10 animate-pulse rounded-full bg-primary/30" />
+      </div>
+    );
+  }
+
+  if (!session) return <Landing />;
+
+  return (
+    <AppShell>
+      <Assistant />
+    </AppShell>
+  );
+}
+
 
 type Line = ChatMessage & { results?: string[] };
 
