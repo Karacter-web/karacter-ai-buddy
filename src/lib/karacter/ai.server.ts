@@ -1,81 +1,59 @@
 /**
- * Shared Lovable AI Gateway access for Karacter server functions.
+ * Karacter's AI entry point. The public interface is deliberately unchanged
+ * (AI_GATEWAY_IMPLEMENTATION.md §14) — callers still use `chatJson` and
+ * `readAiConfig`; only the implementation moved behind the provider gateway.
  *
- * Why this exists: on the Lovable preview the gateway key is injected for us,
- * but a self-hosted deployment (Cloudflare Workers on karacterhub.xyz) has its
- * own environment. If the key is not copied into the Worker's secrets, every
- * planner call fails with an opaque 500 and the assistant looks "dead" even
- * though auth and the database still work. We therefore:
- *   1. read the key at call time (Workers inject env per request),
- *   2. accept an alternate variable name for non-Lovable hosts,
- *   3. fail with an actionable message instead of a generic error.
+ * Why production was failing: this module used to talk to the Lovable gateway
+ * directly and required LOVABLE_API_KEY. The Cloudflare Worker serving
+ * karacterhub.xyz has no such key, so every planner call threw. Production now
+ * routes Gemini -> Mistral from its own Cloudflare secrets, with Lovable kept
+ * as a dev/preview-only adapter.
  */
 
-const DEFAULT_GATEWAY = "https://ai.gateway.lovable.dev/v1";
+import { detectEnvironment, missingCredentialHint } from "./gateway/config";
+import { AiProviderError, AiUnavailableError } from "./gateway/errors";
+import { availableProviderIds, hasProvider, routeChat } from "./gateway/router";
+import type { ChatMessage } from "./providers/types";
 
-export type AiConfig = { key: string; baseUrl: string };
+export { AiUnavailableError };
+export type { ChatMessage };
 
+export type AiConfig = { environment: string; providers: string[] };
+
+/** Non-throwing probe used by best-effort callers (e.g. memory distillation). */
 export function readAiConfig(): AiConfig | null {
-  const key =
-    process.env["LOVABLE_API_KEY"] ||
-    process.env["AI_GATEWAY_API_KEY"] ||
-    "";
-  if (!key) return null;
-  const baseUrl = (process.env["AI_GATEWAY_URL"] || DEFAULT_GATEWAY).replace(/\/$/, "");
-  return { key, baseUrl };
-}
-
-export class AiUnavailableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AiUnavailableError";
-  }
+  const providers = availableProviderIds();
+  if (!providers.length) return null;
+  return { environment: detectEnvironment(), providers };
 }
 
 export function requireAiConfig(): AiConfig {
   const config = readAiConfig();
-  if (!config) {
-    throw new AiUnavailableError(
-      "Karacter's AI brain is not configured on this deployment. Add LOVABLE_API_KEY as an encrypted secret to the Cloudflare Worker (Settings → Variables and Secrets) and redeploy.",
-    );
-  }
+  if (!config) throw new AiUnavailableError(missingCredentialHint());
   return config;
 }
 
-type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+/** Requests a JSON object response and returns the raw assistant content. */
+export async function chatJson(messages: ChatMessage[], model?: string): Promise<string> {
+  if (!hasProvider()) throw new AiUnavailableError(missingCredentialHint());
 
-/** Calls the gateway and returns the raw assistant message content. */
-export async function chatJson(messages: ChatMessage[], model = "google/gemini-3.6-flash") {
-  const { key, baseUrl } = requireAiConfig();
-
-  let response: Response;
   try {
-    response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({ model, response_format: { type: "json_object" }, messages }),
+    const response = await routeChat({
+      messages,
+      ...(model !== undefined ? { model } : {}),
+      responseFormat: "json",
     });
+    return response.content || "{}";
   } catch (error) {
-    throw new AiUnavailableError(
-      `Could not reach the AI gateway from this deployment: ${
-        error instanceof Error ? error.message : "network error"
-      }`,
-    );
+    if (error instanceof AiProviderError) {
+      if (error.kind === "auth") {
+        throw new AiUnavailableError(
+          "The AI provider rejected this deployment's credentials. Check the API keys in the Cloudflare Worker secrets and redeploy.",
+        );
+      }
+      if (error.kind === "rate_limit") throw new Error("Karacter is rate limited. Try again shortly.");
+      throw new Error(`Karacter's AI brain is temporarily unavailable (${error.kind}).`);
+    }
+    throw error;
   }
-
-  if (response.status === 401 || response.status === 403) {
-    throw new AiUnavailableError(
-      "The AI gateway rejected this deployment's key. Rotate LOVABLE_API_KEY and set the new value in the Cloudflare Worker secrets.",
-    );
-  }
-  if (response.status === 429) throw new Error("Karacter is rate limited. Try again shortly.");
-  if (response.status === 402) throw new Error("AI credits exhausted. Add credits to continue.");
-  if (!response.ok) {
-    throw new Error(`AI gateway error ${response.status}: ${(await response.text()).slice(0, 300)}`);
-  }
-
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  return payload.choices?.[0]?.message?.content ?? "{}";
 }
