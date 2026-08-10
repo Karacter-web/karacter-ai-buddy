@@ -10,7 +10,7 @@ import { Landing } from "@/components/karacter/Landing";
 import { useSession } from "@/hooks/useSession";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { planUtterance } from "@/lib/karacter/plan.functions";
 import { learnFromConversation } from "@/lib/karacter/learn.functions";
