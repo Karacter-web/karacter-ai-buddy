@@ -15,6 +15,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
+import { Route as KaracoderRouteImport } from './routes/karacoder'
+import { Route as KarafotoRouteImport } from './routes/karafoto'
+import { Route as KaravidsRouteImport } from './routes/karavids'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -50,6 +53,21 @@ const HistoryRoute = HistoryRouteImport.update({
 const IntegrationsRoute = IntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KaracoderRoute = KaracoderRouteImport.update({
+  id: '/karacoder',
+  path: '/karacoder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KarafotoRoute = KarafotoRouteImport.update({
+  id: '/karafoto',
+  path: '/karafoto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KaravidsRoute = KaravidsRouteImport.update({
+  id: '/karavids',
+  path: '/karavids',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -90,6 +108,9 @@ export interface FileRoutesByFullPath {
   '/cookies': typeof CookiesRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
+  '/karacoder': typeof KaracoderRoute
+  '/karafoto': typeof KarafotoRoute
+  '/karavids': typeof KaravidsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -104,6 +125,9 @@ export interface FileRoutesByTo {
   '/cookies': typeof CookiesRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
+  '/karacoder': typeof KaracoderRoute
+  '/karafoto': typeof KarafotoRoute
+  '/karavids': typeof KaravidsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -119,6 +143,9 @@ export interface FileRoutesById {
   '/cookies': typeof CookiesRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
+  '/karacoder': typeof KaracoderRoute
+  '/karafoto': typeof KarafotoRoute
+  '/karavids': typeof KaravidsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -135,6 +162,9 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/history'
     | '/integrations'
+    | '/karacoder'
+    | '/karafoto'
+    | '/karavids'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -149,6 +179,9 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/history'
     | '/integrations'
+    | '/karacoder'
+    | '/karafoto'
+    | '/karavids'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -163,6 +196,9 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/history'
     | '/integrations'
+    | '/karacoder'
+    | '/karafoto'
+    | '/karavids'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -178,6 +214,9 @@ export interface RootRouteChildren {
   CookiesRoute: typeof CookiesRoute
   HistoryRoute: typeof HistoryRoute
   IntegrationsRoute: typeof IntegrationsRoute
+  KaracoderRoute: typeof KaracoderRoute
+  KarafotoRoute: typeof KarafotoRoute
+  KaravidsRoute: typeof KaravidsRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -228,6 +267,27 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations'
       preLoaderRoute: typeof IntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karacoder': {
+      id: '/karacoder'
+      path: '/karacoder'
+      fullPath: '/karacoder'
+      preLoaderRoute: typeof KaracoderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karafoto': {
+      id: '/karafoto'
+      path: '/karafoto'
+      fullPath: '/karafoto'
+      preLoaderRoute: typeof KarafotoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karavids': {
+      id: '/karavids'
+      path: '/karavids'
+      fullPath: '/karavids'
+      preLoaderRoute: typeof KaravidsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -282,6 +342,9 @@ const rootRouteChildren: RootRouteChildren = {
   CookiesRoute: CookiesRoute,
   HistoryRoute: HistoryRoute,
   IntegrationsRoute: IntegrationsRoute,
+  KaracoderRoute: KaracoderRoute,
+  KarafotoRoute: KarafotoRoute,
+  KaravidsRoute: KaravidsRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,

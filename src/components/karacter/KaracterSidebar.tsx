@@ -1,6 +1,18 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, Plug, ScrollText, LogOut, History, SquarePen, Settings, UserRoundCog } from "lucide-react";
+import {
+  Mic,
+  Plug,
+  ScrollText,
+  LogOut,
+  History,
+  SquarePen,
+  Settings,
+  UserRoundCog,
+  Code2,
+  Image as ImageIcon,
+  Clapperboard,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +40,14 @@ const NAV = [
   { to: "/onboarding", label: "Train Karacter", icon: UserRoundCog },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
+
+const STUDIO = [
+  { to: "/karacoder", label: "Karacoder", icon: Code2 },
+  { to: "/karafoto", label: "Karafoto", icon: ImageIcon },
+  { to: "/karavids", label: "Karavids", icon: Clapperboard },
+] as const;
+
+
 
 export function KaracterSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
@@ -87,6 +107,26 @@ export function KaracterSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Studio</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {STUDIO.map((item) => (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton asChild isActive={pathname === item.to} tooltip={item.label}>
+                    <Link to={item.to} onClick={close}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
 
         {!collapsed && conversations.length > 0 && (
           <SidebarGroup>
