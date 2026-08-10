@@ -430,7 +430,7 @@ function PreferencesTab() {
                 className="flex items-start justify-between gap-4 rounded-xl border border-border/60 p-3"
               >
                 <div className="min-w-0">
-                  <p className="flex items-center gap-2 text-sm font-medium">
+                  <div className="flex items-center gap-2 text-sm font-medium">
                     {permission.label}
                     <Badge
                       variant={
