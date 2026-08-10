@@ -1,6 +1,18 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, Plug, ScrollText, LogOut, History, SquarePen, Settings, UserRoundCog } from "lucide-react";
+import {
+  Mic,
+  Plug,
+  ScrollText,
+  LogOut,
+  History,
+  SquarePen,
+  Settings,
+  UserRoundCog,
+  Code2,
+  Image as ImageIcon,
+  Clapperboard,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";

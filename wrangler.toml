@@ -1,1 +1,46 @@
-// placeholder
+name = "karacter"
+main = ".output/server/index.mjs"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".output/public"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+# Secrets are NEVER stored here. Set them with `wrangler secret put <NAME>`
+# or in the Cloudflare dashboard (Workers > Settings > Variables & Secrets):
+#   SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY,
+#   GEMINI_API_KEY, MISTRAL_API_KEY
+# Build-time browser vars (VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY)
+# must be present in the build environment, not at runtime.
+
+[vars]
+AI_ENVIRONMENT = "production"
+AI_ROUTING_POLICY = "gemini:1,mistral:2"
+
+# Production — karacterhub.xyz
+[env.production]
+name = "karacter"
+
+[env.production.vars]
+AI_ENVIRONMENT = "production"
+AI_ROUTING_POLICY = "gemini:1,mistral:2"
+
+[[env.production.routes]]
+pattern = "karacterhub.xyz"
+custom_domain = true
+
+[[env.production.routes]]
+pattern = "www.karacterhub.xyz"
+custom_domain = true
+
+# Staging / preview — keep every dev change here before production
+[env.staging]
+name = "karacter-staging"
+
+[env.staging.vars]
+AI_ENVIRONMENT = "preview"
+AI_ROUTING_POLICY = "gemini:1,mistral:2"
