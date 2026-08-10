@@ -30,7 +30,7 @@ AI_ENVIRONMENT = "production"
 AI_ROUTING_POLICY = "gemini:1,mistral:2"
 
 [[env.production.routes]]
-pattern = "karacterhub.xyz"
+pattern = "ai.karacterhub.xyz"
 custom_domain = true
 
 [[env.production.routes]]
