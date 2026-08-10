@@ -443,7 +443,7 @@ function PreferencesTab() {
                     >
                       {state}
                     </Badge>
-                  </p>
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">{permission.why}</p>
                 </div>
                 <Button
