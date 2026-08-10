@@ -364,21 +364,42 @@ function Assistant() {
           event.preventDefault();
           void submit(input);
         }}
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 p-3 backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur sm:px-4 sm:pb-4 sm:pt-3"
       >
-        <div className="mx-auto flex max-w-4xl items-center gap-2">
-          <Input
+        <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-lg">
+          <Textarea
             value={input}
             onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void submit(input);
+              }
+            }}
+            rows={1}
             placeholder="Type an instruction…"
             aria-label="Instruction"
             maxLength={2000}
+            className="max-h-40 min-h-[48px] flex-1 resize-none border-0 bg-transparent px-2 py-3 text-base shadow-none focus-visible:ring-0 sm:text-sm"
           />
-          <Button type="button" variant="ghost" size="icon" onClick={() => setVoiceOut(!voiceOut)}>
-            {voiceOut ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 rounded-xl"
+            aria-label={voiceOut ? "Mute spoken replies" : "Unmute spoken replies"}
+            onClick={() => setVoiceOut(!voiceOut)}
+          >
+            {voiceOut ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
           </Button>
-          <Button type="submit" size="icon" disabled={thinking}>
-            <Send className="size-4" />
+          <Button
+            type="submit"
+            size="icon"
+            className="size-11 shrink-0 rounded-xl"
+            aria-label="Send"
+            disabled={thinking || !input.trim()}
+          >
+            <Send className="size-5" />
           </Button>
         </div>
       </form>
