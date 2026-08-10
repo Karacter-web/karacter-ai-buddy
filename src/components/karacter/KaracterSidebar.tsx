@@ -41,6 +41,14 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
+const STUDIO = [
+  { to: "/karacoder", label: "Karacoder", icon: Code2 },
+  { to: "/karafoto", label: "Karafoto", icon: ImageIcon },
+  { to: "/karavids", label: "Karavids", icon: Clapperboard },
+] as const;
+
+
+
 export function KaracterSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
