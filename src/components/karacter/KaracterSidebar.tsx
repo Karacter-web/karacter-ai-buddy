@@ -100,6 +100,26 @@ export function KaracterSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarGroup>
+          <SidebarGroupLabel>Studio</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {STUDIO.map((item) => (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton asChild isActive={pathname === item.to} tooltip={item.label}>
+                    <Link to={item.to} onClick={close}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
+
         {!collapsed && conversations.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Recent chats</SidebarGroupLabel>
