@@ -217,7 +217,8 @@ function Assistant() {
           intents,
         });
         void queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        speak(result.speech, voiceOut);
+        // Code answers are shown but never dictated — spoken syntax is unusable.
+        speak(speakableText(result.speech), speechEnabled);
 
         if (learningOn) {
           void learn({
