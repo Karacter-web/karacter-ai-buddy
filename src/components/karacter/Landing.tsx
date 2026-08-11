@@ -10,6 +10,8 @@ import {
   Waves,
 } from "lucide-react";
 
+import { LegalLinks } from "./LegalLinks";
+
 import { Button } from "@/components/ui/button";
 
 const CAPABILITIES = [
