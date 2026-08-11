@@ -24,10 +24,18 @@ export const Route = createFileRoute("/terms")({
 
 function Terms() {
   return (
-    <LegalPage title="Terms of Service" updated="6 August 2026">
+    <LegalPage title="Terms of Service" updated="11 August 2026">
       <p>
         By creating an account you agree to these terms. If you do not agree, do not use Karacter
         AI.
+      </p>
+      <h2>Pre-release software</h2>
+      <p>
+        Karacter AI is <strong>not a stable release</strong>. It is developer-oriented software
+        under active development, not officially rolled out for public consumption, and offered
+        with <strong>no guarantee</strong> of availability, correctness or data retention. Features
+        and data may change or be removed at any time. See the{" "}
+        <strong>Disclaimer &amp; Beta Notice</strong> for the full statement.
       </p>
       <h2>Your account</h2>
       <p>
