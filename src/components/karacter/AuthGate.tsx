@@ -1,8 +1,8 @@
 import { ShieldCheck } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 import { useSession } from "@/hooks/useSession";
 import { AuthForm } from "./AuthForm";
+import { LegalLinks } from "./LegalLinks";
 
 /**
  * Wraps a protected surface. While the session is resolving we show a quiet
