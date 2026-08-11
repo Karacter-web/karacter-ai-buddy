@@ -1,8 +1,8 @@
 import { ShieldCheck } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 import { useSession } from "@/hooks/useSession";
 import { AuthForm } from "./AuthForm";
+import { LegalLinks } from "./LegalLinks";
 
 /**
  * Wraps a protected surface. While the session is resolving we show a quiet
@@ -37,17 +37,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
         <AuthForm />
 
-        <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-          <Link to="/privacy" className="hover:text-foreground">
-            Privacy Policy
-          </Link>
-          <Link to="/terms" className="hover:text-foreground">
-            Terms of Service
-          </Link>
-          <Link to="/cookies" className="hover:text-foreground">
-            Cookies Policy
-          </Link>
-        </div>
+        <LegalLinks className="mt-6" />
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">
+          Pre-release developer software — provided without guarantees.
+        </p>
       </div>
     </div>
   );

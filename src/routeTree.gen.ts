@@ -13,11 +13,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as DisclaimerRouteImport } from './routes/disclaimer'
+import { Route as GdprRouteImport } from './routes/gdpr'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as KaracoderRouteImport } from './routes/karacoder'
 import { Route as KarafotoRouteImport } from './routes/karafoto'
 import { Route as KaravidsRouteImport } from './routes/karavids'
+import { Route as LicenseRouteImport } from './routes/license'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -45,6 +48,16 @@ const CookiesRoute = CookiesRouteImport.update({
   path: '/cookies',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DisclaimerRoute = DisclaimerRouteImport.update({
+  id: '/disclaimer',
+  path: '/disclaimer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GdprRoute = GdprRouteImport.update({
+  id: '/gdpr',
+  path: '/gdpr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -68,6 +81,11 @@ const KarafotoRoute = KarafotoRouteImport.update({
 const KaravidsRoute = KaravidsRouteImport.update({
   id: '/karavids',
   path: '/karavids',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LicenseRoute = LicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -106,11 +124,14 @@ export interface FileRoutesByFullPath {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/cookies': typeof CookiesRoute
+  '/disclaimer': typeof DisclaimerRoute
+  '/gdpr': typeof GdprRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
   '/karacoder': typeof KaracoderRoute
   '/karafoto': typeof KarafotoRoute
   '/karavids': typeof KaravidsRoute
+  '/license': typeof LicenseRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -123,11 +144,14 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/cookies': typeof CookiesRoute
+  '/disclaimer': typeof DisclaimerRoute
+  '/gdpr': typeof GdprRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
   '/karacoder': typeof KaracoderRoute
   '/karafoto': typeof KarafotoRoute
   '/karavids': typeof KaravidsRoute
+  '/license': typeof LicenseRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -141,11 +165,14 @@ export interface FileRoutesById {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/cookies': typeof CookiesRoute
+  '/disclaimer': typeof DisclaimerRoute
+  '/gdpr': typeof GdprRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
   '/karacoder': typeof KaracoderRoute
   '/karafoto': typeof KarafotoRoute
   '/karavids': typeof KaravidsRoute
+  '/license': typeof LicenseRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -160,11 +187,14 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/cookies'
+    | '/disclaimer'
+    | '/gdpr'
     | '/history'
     | '/integrations'
     | '/karacoder'
     | '/karafoto'
     | '/karavids'
+    | '/license'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -177,11 +207,14 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/cookies'
+    | '/disclaimer'
+    | '/gdpr'
     | '/history'
     | '/integrations'
     | '/karacoder'
     | '/karafoto'
     | '/karavids'
+    | '/license'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -194,11 +227,14 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/cookies'
+    | '/disclaimer'
+    | '/gdpr'
     | '/history'
     | '/integrations'
     | '/karacoder'
     | '/karafoto'
     | '/karavids'
+    | '/license'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -212,11 +248,14 @@ export interface RootRouteChildren {
   ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
   CookiesRoute: typeof CookiesRoute
+  DisclaimerRoute: typeof DisclaimerRoute
+  GdprRoute: typeof GdprRoute
   HistoryRoute: typeof HistoryRoute
   IntegrationsRoute: typeof IntegrationsRoute
   KaracoderRoute: typeof KaracoderRoute
   KarafotoRoute: typeof KarafotoRoute
   KaravidsRoute: typeof KaravidsRoute
+  LicenseRoute: typeof LicenseRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -255,6 +294,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/disclaimer': {
+      id: '/disclaimer'
+      path: '/disclaimer'
+      fullPath: '/disclaimer'
+      preLoaderRoute: typeof DisclaimerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gdpr': {
+      id: '/gdpr'
+      path: '/gdpr'
+      fullPath: '/gdpr'
+      preLoaderRoute: typeof GdprRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -288,6 +341,13 @@ declare module '@tanstack/react-router' {
       path: '/karavids'
       fullPath: '/karavids'
       preLoaderRoute: typeof KaravidsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/license': {
+      id: '/license'
+      path: '/license'
+      fullPath: '/license'
+      preLoaderRoute: typeof LicenseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -340,11 +400,14 @@ const rootRouteChildren: RootRouteChildren = {
   ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
   CookiesRoute: CookiesRoute,
+  DisclaimerRoute: DisclaimerRoute,
+  GdprRoute: GdprRoute,
   HistoryRoute: HistoryRoute,
   IntegrationsRoute: IntegrationsRoute,
   KaracoderRoute: KaracoderRoute,
   KarafotoRoute: KarafotoRoute,
   KaravidsRoute: KaravidsRoute,
+  LicenseRoute: LicenseRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,

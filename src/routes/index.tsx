@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { MessagesSquare, Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/karacter/AppShell";
@@ -17,6 +17,7 @@ import { learnFromConversation } from "@/lib/karacter/learn.functions";
 import { executeIntent } from "@/lib/karacter/executor";
 import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
 import { speak, useVoice } from "@/lib/karacter/useVoice";
+import { speakableText, useResponseMode, type ResponseMode } from "@/lib/karacter/preferences";
 import { pushNotification } from "@/lib/karacter/notifications";
 import { useConsents, useMemories, useProfile, personaSummary } from "@/lib/karacter/profile";
 import { useWakeWord } from "@/lib/karacter/wakeword";
@@ -92,7 +93,7 @@ function Assistant() {
   const [messages, setMessages] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
-  const [voiceOut, setVoiceOut] = useState(true);
+  const { mode: responseMode, setMode: setResponseMode, speechEnabled } = useResponseMode();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const plan = useServerFn(planUtterance);
@@ -216,7 +217,8 @@ function Assistant() {
           intents,
         });
         void queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        speak(result.speech, voiceOut);
+        // Code answers are shown but never dictated — spoken syntax is unusable.
+        speak(speakableText(result.speech), speechEnabled);
 
         if (learningOn) {
           void learn({
@@ -256,7 +258,7 @@ function Assistant() {
       profile,
       queryClient,
       thinking,
-      voiceOut,
+      speechEnabled,
     ],
   );
 
@@ -273,8 +275,8 @@ function Assistant() {
         createdAt: new Date().toISOString(),
       },
     ]);
-    speak(greeting, voiceOut);
-  }, [profile, voiceOut]);
+    speak(greeting, speechEnabled);
+  }, [profile, speechEnabled]);
 
   const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
 
@@ -387,11 +389,30 @@ function Assistant() {
             variant="ghost"
             size="icon"
             className="size-11 shrink-0 rounded-xl"
-            aria-label={voiceOut ? "Mute spoken replies" : "Unmute spoken replies"}
-            onClick={() => setVoiceOut(!voiceOut)}
+            aria-label={`Response mode: ${responseMode}. Tap to change.`}
+            title={`Response mode: ${responseMode}`}
+            onClick={() => {
+              const order: ResponseMode[] = ["both", "text", "voice"];
+              const next = order[(order.indexOf(responseMode) + 1) % order.length]!;
+              setResponseMode(next);
+              toast.success(
+                next === "text"
+                  ? "Text only — Karacter won't speak"
+                  : next === "voice"
+                    ? "Voice replies on"
+                    : "Text + voice replies",
+              );
+            }}
           >
-            {voiceOut ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+            {responseMode === "text" ? (
+              <VolumeX className="size-5" />
+            ) : responseMode === "voice" ? (
+              <Volume2 className="size-5" />
+            ) : (
+              <MessagesSquare className="size-5" />
+            )}
           </Button>
+
           <Button
             type="submit"
             size="icon"

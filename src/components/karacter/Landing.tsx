@@ -10,6 +10,8 @@ import {
   Waves,
 } from "lucide-react";
 
+import { LegalLinks } from "./LegalLinks";
+
 import { Button } from "@/components/ui/button";
 
 const CAPABILITIES = [
@@ -213,21 +215,16 @@ export function Landing() {
       </main>
 
       <footer className="border-t border-border/60 py-10">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-5 text-xs text-muted-foreground sm:flex-row sm:justify-between">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-5 text-xs text-muted-foreground">
+          <p className="text-center">
+            Karacter AI is pre-release developer software, offered without guarantees and MIT
+            licensed. We work with third-party providers, but we never sell or share your data.
+          </p>
+          <LegalLinks />
           <p>© {new Date().getFullYear()} Karacter AI</p>
-          <nav className="flex gap-4">
-            <Link to="/privacy" className="hover:text-foreground">
-              Privacy
-            </Link>
-            <Link to="/terms" className="hover:text-foreground">
-              Terms
-            </Link>
-            <Link to="/cookies" className="hover:text-foreground">
-              Cookies
-            </Link>
-          </nav>
         </div>
       </footer>
+
     </div>
   );
 }
