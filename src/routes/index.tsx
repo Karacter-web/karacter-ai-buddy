@@ -17,6 +17,7 @@ import { learnFromConversation } from "@/lib/karacter/learn.functions";
 import { executeIntent } from "@/lib/karacter/executor";
 import { useCapabilities, useIntegrations } from "@/lib/karacter/registry";
 import { speak, useVoice } from "@/lib/karacter/useVoice";
+import { speakableText, useResponseMode, type ResponseMode } from "@/lib/karacter/preferences";
 import { pushNotification } from "@/lib/karacter/notifications";
 import { useConsents, useMemories, useProfile, personaSummary } from "@/lib/karacter/profile";
 import { useWakeWord } from "@/lib/karacter/wakeword";
