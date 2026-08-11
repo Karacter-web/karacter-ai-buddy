@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RESPONSE_MODES, useResponseMode } from "@/lib/karacter/preferences";
 import {
   AlertDialog,
   AlertDialogAction,
