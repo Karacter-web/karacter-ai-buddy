@@ -93,7 +93,7 @@ function Assistant() {
   const [messages, setMessages] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
-  const [voiceOut, setVoiceOut] = useState(true);
+  const { mode: responseMode, setMode: setResponseMode, speechEnabled } = useResponseMode();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const plan = useServerFn(planUtterance);
