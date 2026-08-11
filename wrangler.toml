@@ -23,7 +23,7 @@ AI_ROUTING_POLICY = "gemini:1,mistral:2"
 
 # Production — ai.karacterhub.xyz
 [env.production]
-name = "karacte-ai"
+name = "karacter-ai"
 
 [env.production.vars]
 AI_ENVIRONMENT = "production"
