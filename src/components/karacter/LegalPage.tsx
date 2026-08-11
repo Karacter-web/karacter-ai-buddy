@@ -26,17 +26,7 @@ export function LegalPage({
         <div className="prose-invert mt-8 space-y-6 text-sm leading-relaxed text-muted-foreground [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-foreground [&_li]:ml-4 [&_li]:list-disc">
           {children}
         </div>
-        <div className="mt-12 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-6 text-[11px] text-muted-foreground">
-          <Link to="/privacy" className="hover:text-foreground">
-            Privacy Policy
-          </Link>
-          <Link to="/terms" className="hover:text-foreground">
-            Terms of Service
-          </Link>
-          <Link to="/cookies" className="hover:text-foreground">
-            Cookies Policy
-          </Link>
-        </div>
+        <LegalLinks className="mt-12 justify-start border-t border-border pt-6" />
       </div>
     </div>
   );
