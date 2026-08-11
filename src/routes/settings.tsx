@@ -418,6 +418,39 @@ function PreferencesTab() {
       </Section>
 
       <Section
+        title="How Karacter replies"
+        description="Choose whether answers are written, spoken, or both. Saved on this device."
+      >
+        <div className="grid gap-2 sm:grid-cols-3">
+          {RESPONSE_MODES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                setResponseMode(option.value);
+                toast.success(`Replies set to ${option.label.toLowerCase()}`);
+              }}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                responseMode === option.value
+                  ? "border-primary bg-primary/10"
+                  : "border-border/60 hover:bg-secondary/50"
+              }`}
+              aria-pressed={responseMode === option.value}
+            >
+              <span className="block text-sm font-medium">{option.label}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{option.hint}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Code, commands and configuration are always shown as text only — Karacter never reads
+          code aloud, whichever mode you choose.
+        </p>
+      </Section>
+
+
+
+      <Section
         title="Device permissions"
         description="Live browser permission state. Changes here take effect immediately."
       >
