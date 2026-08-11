@@ -405,13 +405,12 @@ function Assistant() {
             }}
           >
             {responseMode === "text" ? (
-              <MessagesSquare className="size-5" />
+              <VolumeX className="size-5" />
             ) : responseMode === "voice" ? (
               <Volume2 className="size-5" />
             ) : (
-              <VolumeX className="size-5 rotate-0 opacity-0 absolute" />
+              <MessagesSquare className="size-5" />
             )}
-            {responseMode === "both" && <Volume2 className="size-5" />}
           </Button>
 
           <Button
