@@ -275,8 +275,8 @@ function Assistant() {
         createdAt: new Date().toISOString(),
       },
     ]);
-    speak(greeting, voiceOut);
-  }, [profile, voiceOut]);
+    speak(greeting, speechEnabled);
+  }, [profile, speechEnabled]);
 
   const { listening, supported, start, stop } = useVoice((transcript) => void submit(transcript));
 
