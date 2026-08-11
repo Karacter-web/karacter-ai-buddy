@@ -68,10 +68,27 @@ function Terms() {
         To the maximum extent permitted by law, we are not liable for indirect or consequential loss
         arising from your use of the service or from actions executed by connected capabilities.
       </p>
+      <h2>Third parties and your data</h2>
+      <p>
+        We work with third-party providers (hosting, database, authentication and AI models) to
+        deliver the service. We do not sell your data and we do not share your conversations or
+        account data with third parties for their own marketing or model-training purposes. See the
+        Privacy Policy and GDPR notice.
+      </p>
+      <h2>Licence</h2>
+      <p>
+        The Karacter AI source code is released under the MIT License. That licence covers the code
+        only; use of this hosted deployment remains governed by these terms.
+      </p>
       <h2>Termination</h2>
       <p>
         You may stop using the service at any time. We may suspend accounts that violate these
         terms.
+      </p>
+      <h2>Contact</h2>
+      <p>
+        Support and collaboration: support@karacterhub.xyz · Reports: report@karacterhub.xyz ·
+        Abuse: abuse@karacterhub.xyz
       </p>
     </LegalPage>
   );
