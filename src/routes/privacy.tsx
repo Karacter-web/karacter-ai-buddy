@@ -24,10 +24,11 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated="6 August 2026">
+    <LegalPage title="Privacy Policy" updated="11 August 2026">
       <p>
-        Karacter AI is a capability-driven assistant. This policy explains what we collect, why we
-        collect it, and the control you keep over it.
+        Karacter AI is a capability-driven assistant, currently in pre-release development. This
+        policy explains what we collect, why we collect it, and the control you keep over it. See
+        also our <strong>GDPR &amp; Data Rights</strong> page and the <strong>Disclaimer</strong>.
       </p>
       <h2>Data we collect</h2>
       <ul>
