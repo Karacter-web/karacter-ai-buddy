@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { MessagesSquare, Mic, MicOff, Send, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/karacter/AppShell";
