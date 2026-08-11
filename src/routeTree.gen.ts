@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as DisclaimerRouteImport } from './routes/disclaimer'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as KaracoderRouteImport } from './routes/karacoder'
@@ -43,6 +44,11 @@ const AuthRoute = AuthRouteImport.update({
 const CookiesRoute = CookiesRouteImport.update({
   id: '/cookies',
   path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DisclaimerRoute = DisclaimerRouteImport.update({
+  id: '/disclaimer',
+  path: '/disclaimer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/cookies': typeof CookiesRoute
+  '/disclaimer': typeof DisclaimerRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
   '/karacoder': typeof KaracoderRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/cookies': typeof CookiesRoute
+  '/disclaimer': typeof DisclaimerRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
   '/karacoder': typeof KaracoderRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/cookies': typeof CookiesRoute
+  '/disclaimer': typeof DisclaimerRoute
   '/history': typeof HistoryRoute
   '/integrations': typeof IntegrationsRoute
   '/karacoder': typeof KaracoderRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/cookies'
+    | '/disclaimer'
     | '/history'
     | '/integrations'
     | '/karacoder'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/cookies'
+    | '/disclaimer'
     | '/history'
     | '/integrations'
     | '/karacoder'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/cookies'
+    | '/disclaimer'
     | '/history'
     | '/integrations'
     | '/karacoder'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
   CookiesRoute: typeof CookiesRoute
+  DisclaimerRoute: typeof DisclaimerRoute
   HistoryRoute: typeof HistoryRoute
   IntegrationsRoute: typeof IntegrationsRoute
   KaracoderRoute: typeof KaracoderRoute
@@ -253,6 +266,13 @@ declare module '@tanstack/react-router' {
       path: '/cookies'
       fullPath: '/cookies'
       preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/disclaimer': {
+      id: '/disclaimer'
+      path: '/disclaimer'
+      fullPath: '/disclaimer'
+      preLoaderRoute: typeof DisclaimerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -340,6 +360,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
   CookiesRoute: CookiesRoute,
+  DisclaimerRoute: DisclaimerRoute,
   HistoryRoute: HistoryRoute,
   IntegrationsRoute: IntegrationsRoute,
   KaracoderRoute: KaracoderRoute,
