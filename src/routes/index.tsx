@@ -389,11 +389,31 @@ function Assistant() {
             variant="ghost"
             size="icon"
             className="size-11 shrink-0 rounded-xl"
-            aria-label={voiceOut ? "Mute spoken replies" : "Unmute spoken replies"}
-            onClick={() => setVoiceOut(!voiceOut)}
+            aria-label={`Response mode: ${responseMode}. Tap to change.`}
+            title={`Response mode: ${responseMode}`}
+            onClick={() => {
+              const order: ResponseMode[] = ["both", "text", "voice"];
+              const next = order[(order.indexOf(responseMode) + 1) % order.length]!;
+              setResponseMode(next);
+              toast.success(
+                next === "text"
+                  ? "Text only — Karacter won't speak"
+                  : next === "voice"
+                    ? "Voice replies on"
+                    : "Text + voice replies",
+              );
+            }}
           >
-            {voiceOut ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+            {responseMode === "text" ? (
+              <MessagesSquare className="size-5" />
+            ) : responseMode === "voice" ? (
+              <Volume2 className="size-5" />
+            ) : (
+              <VolumeX className="size-5 rotate-0 opacity-0 absolute" />
+            )}
+            {responseMode === "both" && <Volume2 className="size-5" />}
           </Button>
+
           <Button
             type="submit"
             size="icon"
