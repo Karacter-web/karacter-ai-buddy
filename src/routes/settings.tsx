@@ -382,6 +382,7 @@ function PreferencesTab() {
   const queryClient = useQueryClient();
   const { states, request } = usePermissions();
   const [wakeWord, setWakeWord] = useState("hey karacter");
+  const { mode: responseMode, setMode: setResponseMode } = useResponseMode();
 
   useEffect(() => {
     if (profile?.wake_word) setWakeWord(profile.wake_word);
