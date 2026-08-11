@@ -20,6 +20,7 @@ import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as KaracoderRouteImport } from './routes/karacoder'
 import { Route as KarafotoRouteImport } from './routes/karafoto'
 import { Route as KaravidsRouteImport } from './routes/karavids'
+import { Route as LicenseRouteImport } from './routes/license'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -82,6 +83,11 @@ const KaravidsRoute = KaravidsRouteImport.update({
   path: '/karavids',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LicenseRoute = LicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/karacoder': typeof KaracoderRoute
   '/karafoto': typeof KarafotoRoute
   '/karavids': typeof KaravidsRoute
+  '/license': typeof LicenseRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/karacoder': typeof KaracoderRoute
   '/karafoto': typeof KarafotoRoute
   '/karavids': typeof KaravidsRoute
+  '/license': typeof LicenseRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/karacoder': typeof KaracoderRoute
   '/karafoto': typeof KarafotoRoute
   '/karavids': typeof KaravidsRoute
+  '/license': typeof LicenseRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/karacoder'
     | '/karafoto'
     | '/karavids'
+    | '/license'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/karacoder'
     | '/karafoto'
     | '/karavids'
+    | '/license'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/karacoder'
     | '/karafoto'
     | '/karavids'
+    | '/license'
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   KaracoderRoute: typeof KaracoderRoute
   KarafotoRoute: typeof KarafotoRoute
   KaravidsRoute: typeof KaravidsRoute
+  LicenseRoute: typeof LicenseRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -330,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KaravidsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/license': {
+      id: '/license'
+      path: '/license'
+      fullPath: '/license'
+      preLoaderRoute: typeof LicenseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -387,6 +407,7 @@ const rootRouteChildren: RootRouteChildren = {
   KaracoderRoute: KaracoderRoute,
   KarafotoRoute: KarafotoRoute,
   KaravidsRoute: KaravidsRoute,
+  LicenseRoute: LicenseRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
