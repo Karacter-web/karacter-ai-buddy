@@ -258,7 +258,7 @@ function Assistant() {
       profile,
       queryClient,
       thinking,
-      voiceOut,
+      speechEnabled,
     ],
   );
 
