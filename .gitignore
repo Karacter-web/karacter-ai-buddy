@@ -42,4 +42,6 @@ dist-ssr
 coverage/
 
 # Bun
+bun.lock
 bun.lockb
+bunfig.toml
