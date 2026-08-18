@@ -1,3 +1,24 @@
+# ====================
+# OS & Editor
+# ====================
+.DS_Store
+Thumbs.db
+*.un~
+*.swp
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 # Logs
 logs
 *.log
@@ -7,7 +28,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ====================
+# Node.js
+# ====================
 node_modules
+
+# ====================
+# Build Output
+# ====================
 dist
 dist-ssr
 .output
@@ -16,32 +44,41 @@ dist-ssr
 .nitro
 *.local
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Environment files — never commit real credentials (set them in Cloudflare).
-.env
-.env.*
-!.env.example
-
-# Build artifacts
+# Vite
 *.tsbuildinfo
 coverage/
 
-# Bun
-bun.lock
-bun.lockb
-bunfig.toml
+# ====================
+# Cloudflare
+# ====================
+.wrangler/
+.dev.vars
+
+# ====================
+# Environment
+# ====================
+.env
+.env.*
+!.env.example
+!.env.local.example
+.env.local
+.env.*.local
+
+# ====================
+# Supabase
+# ====================
+# Local Supabase storage (if using local dev)
+supabase/data/
+supabase/logs/
+
+# ====================
+# Testing
+# ====================
+/coverage/
+
+# ====================
+# Misc
+# ====================
+*.pem
+*.key
+*.crt

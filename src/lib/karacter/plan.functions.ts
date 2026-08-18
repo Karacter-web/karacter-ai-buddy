@@ -5,7 +5,7 @@ import { PLAN_SYSTEM, PlanInput, formatRegistry } from "./plan.prompt";
 
 export const planUtterance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => PlanInput.parse(input))
+  .validator((input: unknown) => PlanInput.parse(input))
   .handler(async ({ data }) => {
     const raw = await chatJson([
       {

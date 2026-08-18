@@ -22,11 +22,6 @@ const DEFAULTS: Record<ProviderId, { baseUrl: string; model: string; name: strin
     baseUrl: "https://api.mistral.ai/v1",
     model: "mistral-large-latest",
   },
-  lovable: {
-    name: "Lovable AI Gateway (dev/preview)",
-    baseUrl: "https://ai.gateway.lovable.dev/v1",
-    model: "google/gemini-3.6-flash",
-  },
 };
 
 const env = (name: string) => process.env[name]?.trim() || "";
@@ -48,7 +43,7 @@ function routingPriorities(): Partial<Record<ProviderId, number>> {
   const out: Partial<Record<ProviderId, number>> = {};
   for (const entry of raw.split(",")) {
     const [id, priority] = entry.split(":").map((part) => part.trim());
-    if (id === "gemini" || id === "mistral" || id === "lovable") {
+    if (id === "gemini" || id === "mistral") {
       const parsed = Number(priority);
       out[id] = Number.isFinite(parsed) ? parsed : 1;
     }
@@ -67,7 +62,6 @@ const CAPABILITIES = {
 export function loadProviderConfigs(): ProviderConfig[] {
   const environment = detectEnvironment();
   const overrides = routingPriorities();
-  const lovableKey = env("LOVABLE_API_KEY") || env("AI_GATEWAY_API_KEY");
 
   const candidates: Array<ProviderConfig> = [
     {
@@ -90,17 +84,6 @@ export function loadProviderConfigs(): ProviderConfig[] {
       apiKey: env("MISTRAL_API_KEY"),
       capabilities: CAPABILITIES,
     },
-    {
-      id: "lovable",
-      name: DEFAULTS.lovable.name,
-      // Never part of the production request path.
-      enabled: environment !== "production",
-      priority: overrides.lovable ?? 3,
-      baseUrl: env("AI_GATEWAY_URL") || DEFAULTS.lovable.baseUrl,
-      defaultModel: DEFAULTS.lovable.model,
-      apiKey: lovableKey,
-      capabilities: CAPABILITIES,
-    },
   ];
 
   return candidates
@@ -111,5 +94,5 @@ export function loadProviderConfigs(): ProviderConfig[] {
 export function missingCredentialHint(): string {
   return detectEnvironment() === "production"
     ? "No production AI provider is configured. Add GEMINI_API_KEY (and optionally MISTRAL_API_KEY) as encrypted Cloudflare Worker secrets for karacterhub.xyz, then redeploy."
-    : "No AI provider is configured for this environment. Set LOVABLE_API_KEY for dev/preview, or GEMINI_API_KEY / MISTRAL_API_KEY.";
+    : "No AI provider is configured for this environment. Set GEMINI_API_KEY and/or MISTRAL_API_KEY.";
 }

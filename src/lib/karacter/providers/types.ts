@@ -5,7 +5,7 @@
  * provider answered. Everything above the adapter boundary speaks these types.
  */
 
-export type ProviderId = "gemini" | "mistral" | "lovable";
+export type ProviderId = "gemini" | "mistral";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 

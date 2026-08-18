@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { z } from "zod";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Github } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { signInWithGitHub, signInWithGoogle } from "@/integrations/supabase/oauth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,24 +72,31 @@ function GoogleMark() {
 }
 
 /**
- * Google sign-in is brokered by Supabase Auth. Inside an iframe preview Google
- * refuses to render its consent screen, so hand the URL to a top-level tab.
+ * OAuth sign-in handlers
+ * Supabase Auth brokers OAuth flows. Inside an iframe preview, OAuth providers
+ * refuse to render their consent screens, so we hand the URL to a top-level tab.
  */
-async function signInWithGoogle() {
+async function handleOAuthSignIn(provider: 'google' | 'github') {
   const inFrame = typeof window !== "undefined" && window.self !== window.top;
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: window.location.origin,
-      skipBrowserRedirect: inFrame,
-      queryParams: { prompt: "select_account" },
-    },
-  });
-  if (error) {
-    toast.error(error.message);
+  
+  let result;
+  if (provider === 'google') {
+    result = await signInWithGoogle();
+  } else {
+    result = await signInWithGitHub();
+  }
+  
+  if (result.error) {
+    toast.error(result.error.message);
     return;
   }
-  if (inFrame && data?.url) window.open(data.url, "_blank", "noopener,noreferrer");
+  
+  // For iframe scenarios, open the OAuth URL in a new tab
+  // When skipBrowserRedirect is true, Supabase returns the URL instead of redirecting
+  if (inFrame && result.url) {
+    window.open(result.url, "_blank", "noopener,noreferrer");
+  }
+  // For non-iframe, the built-in redirect behavior handles it
 }
 
 export function AuthForm() {
@@ -292,10 +300,21 @@ export function AuthForm() {
             variant="outline"
             className="w-full gap-2"
             disabled={busy}
-            onClick={signInWithGoogle}
+            onClick={() => handleOAuthSignIn('google')}
           >
             <GoogleMark />
             Continue with Google
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            disabled={busy}
+            onClick={() => handleOAuthSignIn('github')}
+          >
+            <Github className="size-4" />
+            Continue with GitHub
           </Button>
         </>
       )}

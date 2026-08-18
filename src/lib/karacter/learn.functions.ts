@@ -5,7 +5,7 @@ import { chatJson, readAiConfig } from "./ai.server";
 
 export const learnFromConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         transcript: z

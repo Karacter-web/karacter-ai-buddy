@@ -1,6 +1,10 @@
 {
+  "name": "karacter-ai-buddy",
+  "main": "dist/server/server.js",
+  "compatibility_date": "2026-08-18",
+  "compatibility_flags": ["nodejs_compat_v1"],
   "observability": {
-    "enabled": false,
+    "enabled": true,
     "head_sampling_rate": 1,
     "logs": {
       "enabled": true,
@@ -13,5 +17,25 @@
       "persist": true,
       "head_sampling_rate": 1
     }
+  },
+  "vars": {},
+  "kv_namespaces": [],
+  "r2_buckets": [],
+  "d1_databases": [],
+  "vectorize": [],
+  "wasm_modules": {},
+  "build": {
+    "command": "npm run build",
+    "cwd": ".",
+    "watch": { "patterns": ["src"] }
+  },
+  "dev": {
+    "ip": "0.0.0.0",
+    "port": 8787,
+    "local_protocol": "http",
+    "upgrade_insecure_requests": true
+  },
+  "site": {
+    "entry": "dist/client"
   }
 }
