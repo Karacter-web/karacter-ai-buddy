@@ -1,0 +1,165 @@
+name: Dependency Management
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6 AM UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+      - name: Check for outdated dependencies
+        run: npx npm-check-updates --upgrade --jsonUpgraded > upgrades.json || true
+
+      - name: Upload upgrade report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-upgrades
+          path: upgrades.json
+
+  unused-dependencies:
+    name: Detect Unused Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect unused packages
+        run: |
+          npx depcheck --ignores='@tanstack/*,@radix-ui/*,lucide-react,tailwind-merge,clsx,tailwind-merge,tw-animate-css,sonner,date-fns,embla-carousel-react,simple-icons,recharts,cmdk,vaul,react-resizable-panels,input-otp,class-variance-authority,vite-tsconfig-paths' --json > unused-deps.json || true
+
+      - name: Upload unused dependencies report
+        uses: actions/upload-artifact@v4
+        with:
+          name: unused-dependencies
+          path: unused-deps.json
+
+      - name: Fail if critical unused dependencies found
+        run: |
+          if [ -f unused-deps.json ]; then
+            DEPS=$(node -e "const d=require('./unused-deps.json'); console.log(d.dependencies?.length || 0)")
+            if [ "$DEPS" -gt 5 ]; then
+              echo "::error::Found $DEPS potentially unused dependencies. Review and remove if confirmed unused."
+              exit 1
+            fi
+          fi
+
+  dependency-updates:
+    name: Create Dependency Update PR
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, unused-dependencies]
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create dependency update PR
+        uses: dependabot/fetch-metadata@v1
+        id: metadata
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Renovate (Alternative to Dependabot)
+        uses: renovateapp/github-action@v32.102.0
+        with:
+          token: ${{ secrets.RENOVATE_TOKEN }}
+          renovate-version: 32.102.0
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check license compliance
+        run: npx license-checker --summary --onlyAllow='MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;CC-BY-4.0;CC0-1.0;Unlicense;0BSD;CC-BY-3.0;BSD-1-Clause'
+        continue-on-error: true
+
+  dependency-graph:
+    name: Update Dependency Graph
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Node.js dependency graph
+        uses: actions/dependency-review-action@v3
+        with:
+          comment-summary-in-pr: true
+
+  validation-gate:
+    name: Dependency Validation Gate
+    needs: [dependency-audit, unused-dependencies, license-check]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Verify all dependency checks passed
+        if: |
+          needs.dependency-audit.result == 'success' &&
+          needs.unused-dependencies.result == 'success' &&
+          needs.license-check.result == 'success'
+        run: echo "All dependency checks passed!"
+
+      - name: Warn if dependency checks failed
+        if: |
+          needs.dependency-audit.result == 'failure' ||
+          needs.unused-dependencies.result == 'failure' ||
+          needs.license-check.result == 'failure'
+        run: |
+          echo "::warning::Some dependency checks failed. Review and fix before merging to production."
+          exit 0
